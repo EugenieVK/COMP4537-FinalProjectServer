@@ -93,12 +93,14 @@ class Repository {
     async insertUser(email, password){
         try{
             const query = 'INSERT INTO users (email, password, role, tokens) VALUES ("%1", "%2", "gen", 20);'
-            .replace("%1", email)
-            .replace("%2", password);
+            .replace('%1', email)
+            .replace('%2', password);
             const result = await this.runQuery(query);
+            console.log(result);
 
             return {success: true, result: result};
         } catch (err) {
+            console.log(err);
             return { success: false, error: err };
         }
         
@@ -156,6 +158,8 @@ class Server {
             res.write(JSON.stringify({ message: "Email already in use"}));   
             return;
         }
+        console.log(email);
+        console.log(password);
 
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         await this.repo.insertUser(email, hashedPassword);
