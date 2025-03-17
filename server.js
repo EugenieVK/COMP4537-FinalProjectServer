@@ -250,9 +250,9 @@ class Server {
 
                 await this.repo.reduceTokens(user.email);
 
-                // const jsonResponse = JSON.parse(response);
+                const jsonResponse = JSON.parse(response);
                 res.writeHead(200);
-                res.write(response);
+                res.write(JSON.stringify(jsonResponse));
                 res.end();
 
             } else {
