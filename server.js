@@ -53,7 +53,7 @@ class Repository {
         });
 
         // Connects the connection
-        await new Promise ((resolve, reject) => {
+        await new Promise((resolve, reject) => {
             this.con.connect((err) => {
                 if (err) {
                     reject(err);
@@ -80,28 +80,28 @@ class Repository {
         });
     }
 
-    async selectUser(email){
+    async selectUser(email) {
         try {
             const query = "SELECT * FROM users WHERE email = %1:".replace("%1", email);
-            const result  = await this.runQuery(query);
+            const result = await this.runQuery(query);
             return result;
-        } catch(err){
+        } catch (err) {
             return err;
         }
     }
 
-    async insertUser(email, password){
-        try{
+    async insertUser(email, password) {
+        try {
             const query = 'INSERT INTO users (email, password, role, tokens) VALUES (%1, %2, "gen", 20);'
-            .replace("%1", email)
-            .replace("%2", password);
+                .replace("%1", email)
+                .replace("%2", password);
             const result = await this.runQuery(query);
 
-            return {success: true, result: result};
+            return { success: true, result: result };
         } catch (err) {
             return { success: false, error: err };
         }
-        
+
     }
 }
 
@@ -112,7 +112,7 @@ class Server {
         this.repo = new Repository(host, user, password, database, dbPort);
         this.jwtSecret = jwt;
 
-        
+
     }
 
     async parseBody(req) {
@@ -145,15 +145,15 @@ class Server {
         }
     }
 
-    async userSignUp(req, res){
+    async userSignUp(req, res) {
         const info = await this.parseBody(req);
         const email = info.email;
         const password = info.password;
 
         const checkUser = await this.repo.selectUser(email);
-        if(checkUser.length != 0){
+        if (checkUser.length != 0) {
             res.writeHead(400);
-            res.write(JSON.stringify({ message: "Email already in use"}));   
+            res.write(JSON.stringify({ message: "Email already in use" }));
             res.end();
             return;
         }
@@ -161,33 +161,33 @@ class Server {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         this.repo.insertUser(email, hashedPassword);
 
-        const token = jwt.sign({email}, this.jwtSecret, {expiresIn: "2h"});
+        const token = jwt.sign({ email }, this.jwtSecret, { expiresIn: "2h" });
         res.writeHead(200);
         res.write(JSON.stringify({
             message: "User registered",
             role: "gen",
             tokens: 20,
             jwt: token
-        }));      
-        res.end();       
+        }));
+        res.end();
     }
 
-    async userLogin(req, res){
+    async userLogin(req, res) {
         const info = await this.parseBody(req);
         const email = info.email;
         const password = info.password;
 
         const foundUsers = await this.repo.selectUser(email);
-        if(foundUsers.length !== 1 || !(await bcrypt.compare(password, foundUsers[0].password))){
+        if (foundUsers.length !== 1 || !(await bcrypt.compare(password, foundUsers[0].password))) {
             res.writeHead(401);
-            res.write(JSON.stringify({ message: "Invalid email or password"}));
+            res.write(JSON.stringify({ message: "Invalid email or password" }));
             res.end();
             return;
         }
         const user = foundUsers[0];
-        const token = jwt.sign({ email }, this.jwtSecret, {expiresIn: "2h"});
+        const token = jwt.sign({ email }, this.jwtSecret, { expiresIn: "2h" });
         res.writeHead(200);
-        res.write(JSON.stringify({ 
+        res.write(JSON.stringify({
             message: "Successful Login!",
             role: user.role,
             tokens: user.tokens,
@@ -197,56 +197,56 @@ class Server {
     }
 
     //Handles the request
-        async handleRequest(req, res) {
-    
-            const reqUrl = url.parse(req.url, true);
-            const path = reqUrl.pathname;
-            if (req.method === "POST") { //POST request handling
-                //Get the request body
-                if(path === "/signup"){
-                    await this.userSignUp(req, res);
-                    return;
-                } else if (path === "/login") {
-                    await this.userLogin(req, res);
-                    return;
-                }
-            } else if (req.method === "GET") { //GET request handling
-                //Handle the get Request
-                if(path === "/generate"){
-                    const user = this.authenticateJWT(req, res);
-                    if(!user){
-                        res.end();
-                        return;
-                    }
+    async handleRequest(req, res) {
 
-                    const ingredients = reqUrl.query.ingredients.split(",");
-                    const response = await fetch(`${modelAPIUrl}${modelAPIQueryEndpoint}${JSON.stringify(ingredients)}`, {
-                        method: "GET",
-                        headers: { ["Content-Type"]: "application/json" }
-                    });
-
-                    // const jsonResponse = JSON.parse(response);
-                    res.writeHead(200);
-                    res.write(response);
-                    res.end();
-                }
-    
-                
-            } else { //Anything but a GET or POST is unimplemented
-                res.writeHead(501); //501 - unimplemented (server error)
-    
-                //Response for unimplemented server
-                const serverRes = JSON.stringify({
-                    message: messages.messages.BadRequest
-                });
-    
-                //Write response
-                res.write(serverRes);
-                res.end();
-                
+        const reqUrl = url.parse(req.url, true);
+        const path = reqUrl.pathname;
+        if (req.method === "POST") { //POST request handling
+            //Get the request body
+            if (path === "/signup") {
+                await this.userSignUp(req, res);
+                return;
+            } else if (path === "/login") {
+                await this.userLogin(req, res);
+                return;
             }
-            
+        } else if (req.method === "GET") { //GET request handling
+            //Handle the get Request
+            if (path === "/generate") {
+                const user = this.authenticateJWT(req, res);
+                if (!user) {
+                    res.end();
+                    return;
+                }
+
+                const ingredients = reqUrl.query.ingredients.split(",");
+                const response = await fetch(`${modelAPIUrl}${modelAPIQueryEndpoint}${JSON.stringify(ingredients)}`, {
+                    method: "GET",
+                    headers: { ["Content-Type"]: "application/json" }
+                });
+
+                // const jsonResponse = JSON.parse(response);
+                res.writeHead(200);
+                res.write(response);
+                res.end();
+            }
+
+
+        } else { //Anything but a GET or POST is unimplemented
+            res.writeHead(501); //501 - unimplemented (server error)
+
+            //Response for unimplemented server
+            const serverRes = JSON.stringify({
+                message: messages.messages.BadRequest
+            });
+
+            //Write response
+            res.write(serverRes);
+            res.end();
+
         }
+
+    }
 
     //Starts the server
     async startServer() {
@@ -256,29 +256,26 @@ class Server {
 
             http.createServer((req, res) => {
 
-                //Allowing AJAX calls
-                res.setHeader('Access-Control-Allow-Origin', 'https://mealmancer.netlify.app');
-                res.setHeader('Access-Control-Allow-Credentials', 'true');
-                res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+                res.setHeader('Access-Control-Allow-Origin', 'https://mealmancer.netlify.app'); // Allow only specific origin
+                // res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, Authorization headers, etc.)
+                res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Allow these methods
+                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Allow these headers
 
-    
-                //Handles OPTIONS pre-flight requests from CORS
-                if (req.method === "OPTIONS") {
+                // Handle OPTIONS pre-flight requests (CORS)
+                if (req.method === 'OPTIONS') {
                     res.writeHead(204);
                     res.end();
                     return;
                 }
-    
                 res.setHeader('Content-Type', 'application/json'); //returning json responses from server
                 this.handleRequest(req, res);
-    
+
             }).listen(this.port, () => {
                 console.log(`Server is running at port ${this.port}`);
             }); // listens on the passed in port
         } catch (error) {
             console.error("Error initializing database or server:", error);
-        } 
+        }
     }
 }
 
