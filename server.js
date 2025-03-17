@@ -82,7 +82,7 @@ class Repository {
 
     async selectUser(email){
         try {
-            const query = "SELECT * FROM users WHERE email = %1:".replace("%1", email);
+            const query = "SELECT * FROM users WHERE email = '%1':".replace("%1", email);
             const result  = await this.runQuery(query);
             return result;
         } catch(err){
