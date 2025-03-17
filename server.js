@@ -241,7 +241,7 @@ class Server {
                 if (!user) {
                     return;
                 }
-
+                res.writeHead(202);
                 const ingredients = reqUrl.query.ingredients.split(",");
                 const response = await fetch(`${modelAPIUrl}${modelAPIQueryEndpoint}${JSON.stringify(ingredients)}`, {
                     method: "GET",
@@ -249,9 +249,8 @@ class Server {
                 });
 
                 await this.repo.reduceTokens(user.email);
-
                 const jsonResponse = JSON.parse(response);
-                res.writeHead(200);
+                
                 res.write(JSON.stringify(jsonResponse));
                 res.end();
 
@@ -306,7 +305,9 @@ class Server {
                 res.setHeader('Content-Type', 'application/json'); //returning json responses from server
                 this.handleRequest(req, res);
 
-            }).listen(this.port, () => {
+            })
+            .setTimeout(0)
+            .listen(this.port, () => {
                 console.log(`Server is running at port ${this.port}`);
             }); // listens on the passed in port
         } catch (error) {
