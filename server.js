@@ -154,6 +154,7 @@ class Server {
         if(checkUser.length != 0){
             res.writeHead(400);
             res.write(JSON.stringify({ message: "Email already in use"}));   
+            res.end();
             return;
         }
 
@@ -167,7 +168,8 @@ class Server {
             role: "gen",
             tokens: 20,
             jwt: token
-        }));             
+        }));      
+        res.end();       
     }
 
     async userLogin(req, res){
@@ -179,6 +181,7 @@ class Server {
         if(foundUsers.length !== 1 || !(await bcrypt.compare(password, foundUsers[0].password))){
             res.writeHead(401);
             res.write(JSON.stringify({ message: "Invalid email or password"}));
+            res.end();
             return;
         }
         const user = foundUsers[0];
@@ -190,6 +193,7 @@ class Server {
             tokens: user.tokens,
             jwt: token
         }));
+        res.end();
     }
 
     //Handles the request
@@ -211,6 +215,7 @@ class Server {
                 if(path === "/generate"){
                     const user = this.authenticateJWT(req, res);
                     if(!user){
+                        res.end();
                         return;
                     }
 
@@ -223,6 +228,7 @@ class Server {
                     // const jsonResponse = JSON.parse(response);
                     res.writeHead(200);
                     res.write(response);
+                    res.end();
                 }
     
                 
@@ -236,10 +242,10 @@ class Server {
     
                 //Write response
                 res.write(serverRes);
-    
+                res.end();
                 
             }
-            res.end();
+            
         }
 
     //Starts the server
