@@ -151,7 +151,7 @@ class Server {
         const password = info.password;
 
         const checkUser = await this.repo.selectUser(email);
-        if(checkUser.length != 0){
+        if(checkUser.length > 0){
             res.writeHead(400);
             res.write(JSON.stringify({ message: "Email already in use"}));   
             return;
