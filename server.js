@@ -256,10 +256,10 @@ class Server {
 
             http.createServer((req, res) => {
 
-                res.setHeader('Access-Control-Allow-Origin', 'https://mealmancer.netlify.app'); // Allow only specific origin
+                res.setHeader('Access-Control-Allow-Origin', '*'); // Allow only specific origin
                 // res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, Authorization headers, etc.)
-                res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Allow these methods
-                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Allow these headers
+                res.setHeader('Access-Control-Allow-Methods', 'GET, POST'); // Allow these methods
+                res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); // Allow these headers
 
                 // Handle OPTIONS pre-flight requests (CORS)
                 if (req.method === 'OPTIONS') {
