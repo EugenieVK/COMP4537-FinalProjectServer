@@ -236,7 +236,7 @@ class Server {
             }
         } else if (req.method === "GET") { //GET request handling
             //Handle the get Request
-            if (path === "/generate") {
+            if (path === "/generate" || path === "/generate/") {
                 const user = this.authenticateJWT(req, res);
                 if (!user) {
                     return;
