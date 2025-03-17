@@ -266,6 +266,7 @@ class Server {
                 res.setHeader('Access-Control-Allow-Origin', 'https://mealmancer.netlify.app/');
                 res.setHeader('Access-Control-Allow-Headers', 'GET, POST');
                 res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+                res.setHeader('Access-Control-Allow-Credentials', 'true');
     
                 //Handles OPTIONS pre-flight requests from CORS
                 if (req.method === "OPTIONS") {
