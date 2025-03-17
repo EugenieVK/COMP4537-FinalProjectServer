@@ -84,8 +84,10 @@ class Repository {
         try {
             const query = "SELECT * FROM users WHERE email = '%1':".replace("%1", email);
             const result  = await this.runQuery(query);
+            console.log(result);
             return result;
         } catch(err){
+            console.log(err);
             return err;
         }
     }
