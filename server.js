@@ -107,6 +107,20 @@ class Repository {
         }
 
     }
+
+    async reduceTokens(email) {
+        try {
+            const query = `UPDATE users SET tokens = tokens - 1 WHERE email = '%1';`
+                .replace('%1', email);
+            const result = await this.runQuery(query);
+            console.log(result);
+
+            return { success: true, result: result };
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
 }
 
 
@@ -133,6 +147,7 @@ class Server {
 
     authenticateJWT(req, res) {
         const header = req.headers["authorization"];
+        console.log(header);
         if (!header || !header.startsWith("Bearer ")) {
             res.writeHead(401);
             res.write(JSON.stringify({ error: "Access Denied: No Token Provided" }));
@@ -141,6 +156,7 @@ class Server {
         }
 
         const token = header.split(' ')[1];
+        console.log(token);
         try {
             return jwt.verify(token, this.jwtSecret);
         } catch (err) {
@@ -231,6 +247,8 @@ class Server {
                     method: "GET",
                     headers: { ["Content-Type"]: "application/json" }
                 });
+
+                await this.repo.reduceTokens(user.email);
 
                 // const jsonResponse = JSON.parse(response);
                 res.writeHead(200);
