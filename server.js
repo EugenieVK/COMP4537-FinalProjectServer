@@ -151,23 +151,23 @@ class Server {
         const password = info.password;
 
         const checkUser = await this.repo.selectUser(email);
-        if(checkUser.length == 0){
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
-            this.repo.insertUser(email, hashedPassword);
-
-            const token = jwt.sign({email}, this.jwtSecret, {expiresIn: "2h"});
-            res.writeHead(200);
-            res.write(JSON.stringify({
-                message: "User registered",
-                role: "gen",
-                freeCalls: 20,
-                token: token
-            }));
+        if(checkUser.length != 0){
+            res.writeHead(400);
+            res.write(JSON.stringify({ message: "Email already in use"}));   
             return;
         }
 
-        res.writeHead(400);
-        res.write(JSON.stringify({ message: "Email already in use" }));        
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        this.repo.insertUser(email, hashedPassword);
+
+        const token = jwt.sign({email}, this.jwtSecret, {expiresIn: "2h"});
+        res.writeHead(200);
+        res.write(JSON.stringify({
+            message: "User registered",
+            role: "gen",
+            tokens: 20,
+            jwt: token
+        }));             
     }
 
     async userLogin(req, res){
@@ -187,8 +187,8 @@ class Server {
         res.write(JSON.stringify({ 
             message: "Successful Login!",
             role: user.role,
-            freeCalls: user.tokens,
-            token: token
+            tokens: user.tokens,
+            jwt: token
         }));
     }
 
