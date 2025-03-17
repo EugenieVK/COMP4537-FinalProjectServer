@@ -6,10 +6,10 @@ const jwt = require('jsonwebtoken');
 const saltRounds = 10;
 
 // Database connection variables
-const host = process.env.DB_HOST;
+const dbHost = process.env.DB_HOST;
 const dbPort = process.env.DB_PORT;
-const user = process.env.DB_USER;
-const password = process.env.DB_PASSWORD;
+const dbUser = process.env.DB_USER;
+const dbPassword = process.env.DB_PASSWORD;
 const database = process.env.DB_DATABASE;
 
 //JWT Secret key
@@ -271,3 +271,6 @@ class Server {
         } 
     }
 }
+
+const server = new Server(8080, dbHost, dbUser, dbPassword, database, dbPort, jwtSecret);
+server.startServer();
