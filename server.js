@@ -292,7 +292,7 @@ class Server {
 
                 //Allowing AJAX calls
                 res.setHeader('Access-Control-Allow-Origin', 'https://mealmancer.netlify.app');
-                res.setHeader('Access-Control-Allow-Methods', '*');
+                res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE');
                 res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
                 res.setHeader('Access-Control-Allow-Credentials', 'true');
 
