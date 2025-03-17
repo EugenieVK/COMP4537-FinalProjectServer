@@ -1,9 +1,7 @@
-exports.strings = {
-    "msg" : "Hello %1, What a beautiful day. Server current date and time is",
-    "errFile404": "404 File \"%1\" Not Found",
-    "errNoFileGiven" : "No File Specified",
-    "page404" : "404 Page Not Found",
-    "errWritingFile": "Error Writing File",
-    "successWritingFile": "Successfully Wrote to File"
-
+exports.messages = {
+    BadRequest: "Request could not be understood",
+    DBError: "An error occurred editing the database",
+    DBSyntaxError: "There is a syntax error in your sql query!",
+    SuccessfulInsert: "Successfully inserted the new patient(s) into the database!",
+    PageNotFound : "Page Not Found"
 }
