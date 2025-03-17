@@ -3,6 +3,8 @@ const messages = require("./lang/en/en");
 const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const http = require('http');
+const url = require('url');
 const saltRounds = 10;
 
 // Database connection variables
