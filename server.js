@@ -1,6 +1,6 @@
 const joi = require('joi');
 const messages = require("./lang/en/en");
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const http = require('http');
@@ -28,7 +28,7 @@ class Repository {
         this.user = user;
         this.password = password;
         this.database = database;
-        this.con = null;
+        this.pool = null;
 
         this.createUserTable = `
             CREATE TABLE users (
@@ -44,40 +44,27 @@ class Repository {
 
     async init() {
         // Creates a connection 
-        this.con = mysql.createConnection({
+        this.pool = mysql.createPool({
             host: this.host,
             user: this.user,
             port: this.port,
             password: this.password,
-            database: this.database
-        });
-
-        // Connects the connection
-        await new Promise((resolve, reject) => {
-            this.con.connect((err) => {
-                if (err) {
-                    reject(err);
-                }
-                resolve();
-            });
+            database: this.database,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0
         });
     }
 
     // Runs a query 
     async runQuery(query) {
-        //Returns a promise
-        //Reject and resolve are not defined defaulting to
-        //Resolve acting like return
-        //Reject acting like a throw
-        return new Promise((resolve, reject) => {
-            this.con.query(query, (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(result);
-                }
-            });
-        });
+        const con = await this.pool.getConnection();
+        try {
+            const [rows] = await connection.query(sql);
+            return rows;
+        } finally {
+            connection.release();
+        }
     }
 
     async selectUser(email) {
