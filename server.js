@@ -60,10 +60,10 @@ class Repository {
     async runQuery(query) {
         const con = await this.pool.getConnection();
         try {
-            const [rows] = await connection.query(sql);
+            const [rows] = await con.query(sql);
             return rows;
         } finally {
-            connection.release();
+            con.release();
         }
     }
 
