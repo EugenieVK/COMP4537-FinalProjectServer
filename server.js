@@ -207,7 +207,7 @@ class Server {
         const token = jwt.sign({ email }, this.privateKey, { algorithm: "RS256", expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
-        res.setHeader('Set-Cookie', `accessToken=${token}; HttpOnly; Secure; Path=/; Max-Age=${this.sessionDuration}`);
+        res.setHeader('Set-Cookie', `accessToken=${token}; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=${this.sessionDuration}`);
         res.writeHead(200);
         res.write(JSON.stringify({
             message: "User registered",
@@ -235,7 +235,7 @@ class Server {
         const token = jwt.sign({ email }, this.privateKey, { algorithm: "RS256", expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
-        res.setHeader('Set-Cookie', `accessToken=${token}; HttpOnly; Secure; Path=/; Max-Age=${this.sessionDuration}`); // 7200 = 2 hours
+        res.setHeader('Set-Cookie', `accessToken=${token}; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=${this.sessionDuration}`); // 7200 = 2 hours
         res.writeHead(200);
         res.write(JSON.stringify({
             message: "Successful Login!",
@@ -247,7 +247,7 @@ class Server {
     }
 
     userLogout(res){
-        res.setHeader('Set-Cookie', 'accessToken=; HttpOnly; Secure; Path=/; Max-Age=0');
+        res.setHeader('Set-Cookie', 'accessToken=; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=0');
         res.writeHead(200);
 
         res.write(JSON.stringify({message: messages.messages.Logout}));
