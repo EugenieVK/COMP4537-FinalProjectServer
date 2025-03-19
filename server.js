@@ -175,6 +175,9 @@ class Server {
 
     authenticateJWT(req, res) {
         const cookies = parse(req.headers.cookie || "");
+        console.log(cookies);
+        console.log(cookies.accessToken);
+        console.log("TEST");
         try {
             return jwt.verify(cookies.accessToken, this.publicKey, {algorithms: ["RS256"]});
         } catch (err) {
