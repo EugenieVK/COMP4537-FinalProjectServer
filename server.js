@@ -7,7 +7,6 @@ const http = require('http');
 const url = require('url');
 const { parse } = require('cookie');
 
-
 const saltRounds = 10;
 
 // Database connection variables
@@ -176,13 +175,6 @@ class Server {
 
     authenticateJWT(req, res) {
         const cookies = parse(req.headers.cookie || "");
-        if (!cookies || !cookies.accessToken) {
-            res.writeHead(401);
-            res.write(JSON.stringify({ error: "Access Denied: No Token Provided" }));
-            res.end();
-            return null;
-        }
-
         try {
             return jwt.verify(cookies.accessToken, this.publicKey, {algorithms: ["RS256"]});
         } catch (err) {
