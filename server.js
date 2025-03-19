@@ -287,7 +287,7 @@ class Server {
                 if (!user) {
                     return;
                 }
-                res.writeHead(202);
+                res.writeHead(200);
 
                 const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
                 await this.repo.reduceTokens(user.email);
