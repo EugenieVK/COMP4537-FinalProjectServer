@@ -362,5 +362,5 @@ class Server {
 }
 
 const recipeApi = new RecipeAPI(modelAPIUrl, modelAPIQueryEndpoint);
-const server = new Server(8000, dbHost, dbUser, dbPassword, database, dbPort, privateKey, publicKey, recipeApi);
+const server = new Server(8080, dbHost, dbUser, dbPassword, database, dbPort, privateKey, publicKey, recipeApi);
 server.startServer();
