@@ -5,6 +5,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const http = require('http');
 const url = require('url');
+const { parse } = require('cookie');
+
+
 const saltRounds = 10;
 
 // Database connection variables
@@ -14,8 +17,9 @@ const dbUser = process.env.DB_USER;
 const dbPassword = process.env.DB_PASSWORD;
 const database = process.env.DB_DATABASE;
 
-//JWT Secret key
-const jwtSecret = process.env.JWT_SECRET;
+//JWT Secret keys
+const privateKey = process.env.PRIVATE_KEY;
+const publicKey = process.env.PUBLIC_KEY;
 
 const modelAPIUrl = "https://recipeapi.duckdns.org";
 const modelAPIQueryEndpoint = "/generate/?prompt=";
@@ -110,14 +114,52 @@ class Repository {
     }
 }
 
+class RecipeAPI {
+    constructor(url, path) {
+        this.url = url;
+        this.path = path;
+    }
+
+    async getRecipe(ingredients) {
+        const response = await fetch(`${this.url}${this.path}${ingredients}`, {
+            method: "GET",
+            headers: { ["Content-Type"]: "application/json" }
+        });
+        const data = await response.json();
+        const recipe = this.formatRecipe(data.recipe)
+        return recipe
+    }
+
+    formatRecipe(recipe) {
+        let formattedRecipe = {};
+        const sections = recipe.split('\n');
+        sections.forEach((section) => {
+            const sectionParts = section.split(':').map(item => item.trim());
+            const sectionName = sectionParts[0];
+            const sectionContent = sectionParts[1];
+
+            const splitContent = sectionContent.split("--").map(line => line.trim()).filter(line => line !== "");
+            if(splitContent.length > 1){
+                formattedRecipe[sectionName] = splitContent;
+            } else {
+                formattedRecipe[sectionName] = sectionContent;
+            }
+        });
+
+        return formattedRecipe;
+    }
+}
+
 
 class Server {
-    constructor(port, host, user, password, database, dbPort, jwt) {
+    constructor(port, host, user, password, database, dbPort, privateKey, publicKey, recipeApi) {
         this.port = port;
         this.repo = new Repository(host, user, password, database, dbPort);
-        this.jwtSecret = jwt;
+        this.privateKey = privateKey;
+        this.publicKey = publicKey;
+        this.api = recipeApi;
 
-
+        this.sessionDuration = 2 * 60 * 60;
     }
 
     async parseBody(req) {
@@ -133,19 +175,16 @@ class Server {
     }
 
     authenticateJWT(req, res) {
-        const header = req.headers["authorization"];
-        console.log(header);
-        if (!header || !header.startsWith("Bearer ")) {
+        const cookies = parse(req.headers.cookie || "");
+        if (!cookies || !cookies.accessToken) {
             res.writeHead(401);
             res.write(JSON.stringify({ error: "Access Denied: No Token Provided" }));
             res.end();
             return null;
         }
 
-        const token = header.split(' ')[1];
-        console.log(token);
         try {
-            return jwt.verify(token, this.jwtSecret);
+            return jwt.verify(cookies.accessToken, this.publicKey, {algorithms: ["RS256"]});
         } catch (err) {
             res.writeHead(401);
             res.write(JSON.stringify({ error: "Access Denied: Invalid Token" }));
@@ -166,19 +205,20 @@ class Server {
             res.end();
             return;
         }
-        console.log(email);
-        console.log(password);
 
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         await this.repo.insertUser(email, hashedPassword);
 
-        const token = jwt.sign({ email }, this.jwtSecret, { expiresIn: "2h" });
+        const token = jwt.sign({ email }, this.privateKey, { algorithm: "RS256", expiresIn: this.sessionDuration });
+        const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
+
+        res.setHeader('Set-Cookie', `accessToken=${token}; HttpOnly; Secure; Path=/; Max-Age=${this.sessionDuration}`);
         res.writeHead(200);
         res.write(JSON.stringify({
             message: "User registered",
             role: "gen",
             tokens: 20,
-            jwt: token
+            expiresAt: expiresAt.toISOString()
         }));
         res.end();
     }
@@ -191,19 +231,31 @@ class Server {
         const foundUsers = await this.repo.selectUser(email);
         if (foundUsers.length !== 1 || !(await bcrypt.compare(password, foundUsers[0].password))) {
             res.writeHead(401);
+            
             res.write(JSON.stringify({ message: "Invalid email or password" }));
             res.end();
             return;
         }
         const user = foundUsers[0];
-        const token = jwt.sign({ email }, this.jwtSecret, { expiresIn: "2h" });
+        const token = jwt.sign({ email }, this.privateKey, { algorithm: "RS256", expiresIn: this.sessionDuration });
+        const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
+
+        res.setHeader('Set-Cookie', `accessToken=${token}; HttpOnly; Secure; Path=/; Max-Age=${this.sessionDuration}`); // 7200 = 2 hours
         res.writeHead(200);
         res.write(JSON.stringify({
             message: "Successful Login!",
             role: user.role,
             tokens: user.tokens,
-            jwt: token
+            expiresAt: expiresAt.toISOString()
         }));
+        res.end();
+    }
+
+    userLogout(res){
+        res.setHeader('Set-Cookie', 'accessToken=; HttpOnly; Secure; Path=/; Max-Age=0');
+        res.writeHead(200);
+
+        res.write(JSON.stringify({message: messages.messages.Logout}));
         res.end();
     }
 
@@ -216,10 +268,22 @@ class Server {
             //Get the request body
             if (path === "/signup") {
                 await this.userSignUp(req, res);
-                return;
             } else if (path === "/login") {
                 await this.userLogin(req, res);
-                return;
+            } else if(path === "/logout") {
+                this.userLogout(res);
+                
+            } else {
+                res.writeHead(404);
+
+                //Response for unimplemented server
+                const serverRes = JSON.stringify({
+                    message: messages.messages.PageNotFound
+                });
+
+                //Write response
+                res.write(serverRes);
+                res.end();
             }
         } else if (req.method === "GET") { //GET request handling
             //Handle the get Request
@@ -229,18 +293,12 @@ class Server {
                     return;
                 }
                 res.writeHead(202);
-                const ingredients = reqUrl.query.ingredients.split(",");
-                const response = await fetch(`${modelAPIUrl}${modelAPIQueryEndpoint}${JSON.stringify(ingredients)}`, {
-                    method: "GET",
-                    headers: { ["Content-Type"]: "application/json" }
-                });
 
+                const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
                 await this.repo.reduceTokens(user.email);
-                const jsonResponse = JSON.parse(response);
-                
-                res.write(JSON.stringify(jsonResponse));
-                res.end();
 
+                res.write(JSON.stringify(recipe));
+                res.end();
             } else {
                 res.writeHead(404);
 
@@ -293,15 +351,16 @@ class Server {
                 this.handleRequest(req, res);
 
             })
-            .setTimeout(0)
-            .listen(this.port, () => {
-                console.log(`Server is running at port ${this.port}`);
-            }); // listens on the passed in port
+                .setTimeout(0)
+                .listen(this.port, () => {
+                    console.log(`Server is running at port ${this.port}`);
+                }); // listens on the passed in port
         } catch (error) {
             console.error("Error initializing database or server:", error);
         }
     }
 }
 
-const server = new Server(8080, dbHost, dbUser, dbPassword, database, dbPort, jwtSecret);
+const recipeApi = new RecipeAPI(modelAPIUrl, modelAPIQueryEndpoint);
+const server = new Server(8000, dbHost, dbUser, dbPassword, database, dbPort, privateKey, publicKey, recipeApi);
 server.startServer();
