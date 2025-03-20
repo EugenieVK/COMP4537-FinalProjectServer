@@ -1,3 +1,4 @@
+// Node module imports
 const joi = require('joi');
 const messages = require("./lang/en/en");
 const mysql = require('mysql2/promise');
@@ -7,6 +8,7 @@ const http = require('http');
 const url = require('url');
 const { parse } = require('cookie');
 
+// Salt rounds for hashing
 const saltRounds = 10;
 
 // Database connection variables
@@ -20,20 +22,15 @@ const database = process.env.DB_DATABASE;
 const privateKey = process.env.PRIVATE_KEY;
 const publicKey = process.env.PUBLIC_KEY;
 
+// Recipe API variables
 const modelAPIUrl = "https://recipeapi.duckdns.org";
 const modelAPIQueryEndpoint = "/generate/?prompt=";
 
-class Repository {
-    // Establishes variables used to conncet to database
-    constructor(host, user, password, database, port) {
-        this.host = host;
-        this.port = port;
-        this.user = user;
-        this.password = password;
-        this.database = database;
-        this.pool = null;
-
-        this.createUserTable = `
+/**
+ * String constants
+ */
+// Database constants
+const databaseTableConst = `
             CREATE TABLE users (
                 id INT NOT NULL AUTO_INCREMENT,
                 email VARCHAR(100) UNIQUE,
@@ -42,9 +39,75 @@ class Repository {
                 tokens INT,
                 PRIMARY KEY(id)
             );
-        `
+        `;
+const reduceTokensQuery = "UPDATE users SET tokens = tokens - 1 WHERE email = '%1';";
+const insertUserQuery = "INSERT INTO users (email, password, role, tokens) VALUES ('%1', '%2', 'gen', 20);";
+const selectUserQuery = "SELECT * FROM users WHERE email = '%1';";
+
+// JSON constants
+const jsonGet = "GET";
+const jsonPost = "POST";
+const testConst = "TEST";
+const jsonContentType = "Content-Type";
+const jsonApplication = "application/json";
+const dataConst = "data";
+const endConst = "end";
+
+// Path constants
+const signupPath = "/signup";
+const loginPath = "/login";
+const logoutPath = "/logout";
+const generatePath = "/generate";
+const generatePathAlt = "/generate/";
+
+// Cookie constants
+const setCookie = "Set-Cookie";
+const logoutCookie = "accessToken=; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=0";
+const cookieTemplate = (token, maxAge) => `accessToken=${token}; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=${maxAge}`;
+
+// Algorithm constant
+const algorithmConst = "RS256";
+
+// User constants
+const userRoleConst = "gen";
+
+// CORS constants
+const optionsConst = "OPTIONS";
+const corsOrigin = "Access-Control-Allow-Origin";
+const corsMethods = "Access-Control-Allow-Methods";
+const corsHeaders = "Access-Control-Allow-Headers";
+const corsCredentials = "Access-Control-Allow-Credentials";
+const trueConst = "true";
+const corsOriginValue = "https://mealmancer.netlify.app";
+const corsMethodsValue = "POST, GET, OPTIONS, PUT, DELETE";
+const corsHeadersValue = "Content-Type, Authorization";
+
+/**
+ * Repository class to handle database operations
+ */
+class Repository {
+    /**
+     * Constructor for the Repository class
+     * @param {*} host 
+     * @param {*} user 
+     * @param {*} password 
+     * @param {*} database 
+     * @param {*} port 
+     */
+    constructor(host, user, password, database, port) {
+        this.host = host;
+        this.port = port;
+        this.user = user;
+        this.password = password;
+        this.database = database;
+        this.pool = null;
+
+        this.createUserTable = databaseTableConst;
     }
 
+    /**
+     * Asynchronous function to initialize the connection pool
+     */
     async init() {
         // Creates a connection 
         this.pool = mysql.createPool({
@@ -59,7 +122,11 @@ class Repository {
         });
     }
 
-    // Runs a query 
+    /**
+     * Asynchronous function to run a query
+     * @param {*} query
+     * @returns result of the query
+     */
     async runQuery(query) {
         const con = await this.pool.getConnection();
         try {
@@ -70,9 +137,14 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to select a user
+     * @param {*} email 
+     * @returns result of the query
+     */
     async selectUser(email) {
         try {
-            const query = "SELECT * FROM users WHERE email = '%1';".replace("%1", email);
+            const query = selectUserQuery.replace("%1", email);
             const result = await this.runQuery(query);
             console.log(result);
             return result;
@@ -82,11 +154,15 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to insert a user
+     * @param {*} email 
+     * @param {*} password 
+     * @returns result of the query
+     */
     async insertUser(email, password) {
         try {
-            const query = `INSERT INTO users (email, password, role, tokens) VALUES ('%1', '%2', 'gen', 20);`
-                .replace('%1', email)
-                .replace('%2', password);
+            const query = insertUserQuery.replace('%1', email).replace('%2', password);
             const result = await this.runQuery(query);
             console.log(result);
 
@@ -98,10 +174,14 @@ class Repository {
 
     }
 
+    /**
+     * Asynchronous function to reduce tokens
+     * @param {*} email 
+     * @returns result of the query
+     */
     async reduceTokens(email) {
         try {
-            const query = `UPDATE users SET tokens = tokens - 1 WHERE email = '%1';`
-                .replace('%1', email);
+            const query = reduceTokensQuery.replace('%1', email);
             const result = await this.runQuery(query);
             console.log(result);
 
@@ -113,22 +193,40 @@ class Repository {
     }
 }
 
+/**
+ * RecipeAPI class to handle recipe API operations
+ */
 class RecipeAPI {
+    /**
+     * Constructor for the RecipeAPI class
+     * @param {*} url 
+     * @param {*} path 
+     */
     constructor(url, path) {
         this.url = url;
         this.path = path;
     }
 
+    /**
+     * Asynchronous function to get a recipe from the API
+     * @param {*} ingredients 
+     * @returns recipe
+     */
     async getRecipe(ingredients) {
         const response = await fetch(`${this.url}${this.path}${ingredients}`, {
-            method: "GET",
-            headers: { ["Content-Type"]: "application/json" }
+            method: jsonGet,
+            headers: { [jsonContentType]: jsonApplication }
         });
         const data = await response.json();
         const recipe = this.formatRecipe(data.recipe)
         return recipe
     }
 
+    /**
+     * Formats the recipe from the API for use by the client side of the application
+     * @param {*} recipe 
+     * @returns formatted recipe
+     */
     formatRecipe(recipe) {
         let formattedRecipe = {};
         const sections = recipe.split('\n');
@@ -149,8 +247,22 @@ class RecipeAPI {
     }
 }
 
-
+/**
+ * Server class to handle server operations
+ */
 class Server {
+    /**
+     * Constructor for the Server class
+     * @param {*} port 
+     * @param {*} host 
+     * @param {*} user 
+     * @param {*} password 
+     * @param {*} database 
+     * @param {*} dbPort 
+     * @param {*} privateKey 
+     * @param {*} publicKey 
+     * @param {*} recipeApi 
+     */
     constructor(port, host, user, password, database, dbPort, privateKey, publicKey, recipeApi) {
         this.port = port;
         this.repo = new Repository(host, user, password, database, dbPort);
@@ -161,84 +273,119 @@ class Server {
         this.sessionDuration = 2 * 60 * 60;
     }
 
+    /**
+     * Asynchronous function to parse the body of a request
+     * @param {*} req 
+     * @returns body of the request
+     */
     async parseBody(req) {
         return new Promise((resolve, reject) => {
             let body = "";
-            req.on("data", chunk => {
+            req.on(dataConst, chunk => {
                 body += chunk;
             });
-            req.on("end", () => {
+            req.on(endConst, () => {
                 resolve(body ? JSON.parse(body) : {})
             });
         });
     }
 
+    /**
+     * Authenticate the JWT token
+     * @param {*} req 
+     * @param {*} res 
+     * @returns user
+     */
     authenticateJWT(req, res) {
+        // Get the cookie from the request
         const cookies = parse(req.headers.cookie || "");
         console.log(cookies);
         console.log(cookies.accessToken);
-        console.log("TEST");
+        console.log(testConst);
         try {
-            return jwt.verify(cookies.accessToken, this.publicKey, {algorithms: ["RS256"]});
+            // Verify the JWT token
+            return jwt.verify(cookies.accessToken, this.publicKey, {algorithms: [algorithmConst]});
         } catch (err) {
             res.writeHead(401);
-            res.write(JSON.stringify({ error: "Access Denied: Invalid Token" }));
+            res.write(JSON.stringify({ error: messages.messages.InvalidToken }));
             res.end();
             return null;
         }
     }
 
+    /**
+     * Signs up a user
+     * @param {*} req 
+     * @param {*} res 
+     * @returns user
+     */
     async userSignUp(req, res) {
+        // Get the email and password from the request body
         const info = await this.parseBody(req);
         const email = info.email;
         const password = info.password;
 
+        // Check if the email is already in use
         const checkUser = await this.repo.selectUser(email);
         if (checkUser.length > 0) {
             res.writeHead(400);
-            res.write(JSON.stringify({ message: "Email already in use" }));
+            res.write(JSON.stringify({ message: messages.messages.EmailUsed }));
             res.end();
             return;
         }
 
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         await this.repo.insertUser(email, hashedPassword);
 
-        const token = jwt.sign({ email }, this.privateKey, { algorithm: "RS256", expiresIn: this.sessionDuration });
+        // Create a JWT token
+        const token = jwt.sign({ email }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
-        res.setHeader('Set-Cookie', `accessToken=${token}; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=${this.sessionDuration}`);
+        // Set the cookie
+        res.setHeader(setCookie, cookieTemplate(token, this.sessionDuration));
         res.writeHead(200);
         res.write(JSON.stringify({
-            message: "User registered",
-            role: "gen",
+            message: messages.messages.RegisterSuccess,
+            role: userRoleConst,
             tokens: 20,
             expiresAt: expiresAt.toISOString()
         }));
         res.end();
     }
 
+    /**
+     * Asynchronous function to log in a user
+     * @param {*} req 
+     * @param {*} res 
+     * @returns user
+     */
     async userLogin(req, res) {
+        // Get the email and password from the request body
         const info = await this.parseBody(req);
         const email = info.email;
         const password = info.password;
 
+        // Check if the user exists
         const foundUsers = await this.repo.selectUser(email);
         if (foundUsers.length !== 1 || !(await bcrypt.compare(password, foundUsers[0].password))) {
             res.writeHead(401);
             
-            res.write(JSON.stringify({ message: "Invalid email or password" }));
+            res.write(JSON.stringify({ message: messages.messages.InvalidLogin }));
             res.end();
             return;
         }
+
+        // Create a JWT token
         const user = foundUsers[0];
-        const token = jwt.sign({ email }, this.privateKey, { algorithm: "RS256", expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
-        res.setHeader('Set-Cookie', `accessToken=${token}; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=${this.sessionDuration}`); // 7200 = 2 hours
+        // Set the cookie
+        res.setHeader(setCookie, cookieTemplate(token, this.sessionDuration)); // 7200 = 2 hours
         res.writeHead(200);
         res.write(JSON.stringify({
-            message: "Successful Login!",
+            message: messages.messages.LoginSuccess,
             role: user.role,
             tokens: user.tokens,
             expiresAt: expiresAt.toISOString()
@@ -246,26 +393,38 @@ class Server {
         res.end();
     }
 
+    /**
+     * Logs out a user
+     * @param {*} res 
+     */
     userLogout(res){
-        res.setHeader('Set-Cookie', 'accessToken=; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=0');
+        // Set the cookie
+        res.setHeader(setCookie, logoutCookie);
         res.writeHead(200);
 
+        // Write the response
         res.write(JSON.stringify({message: messages.messages.Logout}));
         res.end();
     }
 
-    //Handles the request
+    /**
+     * Asynchronous function to handle a request
+     * @param {*} req 
+     * @param {*} res 
+     * @returns response
+     */
     async handleRequest(req, res) {
-
+        //Parse the request URL
         const reqUrl = url.parse(req.url, true);
         const path = reqUrl.pathname;
-        if (req.method === "POST") { //POST request handling
+        //Check the request method
+        if (req.method === jsonPost) { //POST request handling
             //Get the request body
-            if (path === "/signup") {
+            if (path === signupPath) {
                 await this.userSignUp(req, res);
-            } else if (path === "/login") {
+            } else if (path === loginPath) {
                 await this.userLogin(req, res);
-            } else if(path === "/logout") {
+            } else if(path === logoutPath) {
                 this.userLogout(res);
                 
             } else {
@@ -280,18 +439,20 @@ class Server {
                 res.write(serverRes);
                 res.end();
             }
-        } else if (req.method === "GET") { //GET request handling
+        } else if (req.method === jsonGet) { //GET request handling
             //Handle the get Request
-            if (path === "/generate" || path === "/generate/") {
+            if (path === generatePath || path === generatePathAlt) {
                 const user = this.authenticateJWT(req, res);
                 if (!user) {
                     return;
                 }
                 res.writeHead(200);
 
+                //Get the recipe from the API
                 const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
                 await this.repo.reduceTokens(user.email);
 
+                //Write the response
                 res.write(JSON.stringify(recipe));
                 res.end();
             } else {
@@ -321,41 +482,50 @@ class Server {
 
     }
 
-    //Starts the server
+    /**
+     * Asynchronous function to start the server
+     */
     async startServer() {
         try {
+            //Initialize the database
             await this.repo.init();
-            console.log("Database initialized!");
+            console.log(messages.messages.DatabaseInit);
 
+            //Create the server
             http.createServer((req, res) => {
 
                 //Allowing AJAX calls
-                res.setHeader('Access-Control-Allow-Origin', 'https://mealmancer.netlify.app');
-                res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE');
-                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-                res.setHeader('Access-Control-Allow-Credentials', 'true');
+                res.setHeader(corsOrigin, corsOriginValue);
+                res.setHeader(corsMethods, corsMethodsValue);
+                res.setHeader(corsHeaders, corsHeadersValue);
+                res.setHeader(corsCredentials, trueConst);
 
                 //Handles OPTIONS pre-flight requests from CORS
-                if (req.method === "OPTIONS") {
+                if (req.method === optionsConst) {
                     res.writeHead(204);
                     res.end();
                     return;
                 }
 
-                res.setHeader('Content-Type', 'application/json'); //returning json responses from server
+                res.setHeader(jsonContentType, jsonApplication); //returning json responses from server
                 this.handleRequest(req, res);
 
             })
+                // Set the timeout to 0 to prevent the server from closing the connection
                 .setTimeout(0)
                 .listen(this.port, () => {
-                    console.log(`Server is running at port ${this.port}`);
+                    console.log(messages.ServerRunning.replace("{port}", this.port));
                 }); // listens on the passed in port
         } catch (error) {
-            console.error("Error initializing database or server:", error);
+            console.error(messages.messages.DatabaseError, error);
         }
     }
 }
 
+/**
+ * Create a new instance of the RecipeAPI class and the Server class
+ * Start the server
+ */
 const recipeApi = new RecipeAPI(modelAPIUrl, modelAPIQueryEndpoint);
 const server = new Server(8080, dbHost, dbUser, dbPassword, database, dbPort, privateKey, publicKey, recipeApi);
 server.startServer();
