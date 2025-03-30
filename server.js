@@ -576,6 +576,8 @@ class Server {
                 res.write(serverRes);
                 res.end();
             }
+        } else {
+            this.pageNotFoundResponse(res);
         }
 
 
