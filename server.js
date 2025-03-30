@@ -451,6 +451,7 @@ class Server {
                 apiStats: apiStats,
                 expiresAt: expiresAt.toISOString()
             }));
+            res.end();
         } else {
             res.write(JSON.stringify({
                 message: messages.messages.LoginSuccess,
@@ -459,9 +460,11 @@ class Server {
                 httpRequests: user.httpRequests,
                 expiresAt: expiresAt.toISOString()
             }));
+            res.end();
         }
+        console.log("RESPONSE HAS BEEN SENT?????");
         
-        res.end();
+       
     }
 
     /**
