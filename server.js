@@ -40,9 +40,22 @@ const databaseTableConst = `
                 PRIMARY KEY(id)
             );
         `;
-const reduceTokensQuery = "UPDATE users SET tokens = tokens - 1 WHERE email = '%1';";
-const insertUserQuery = "INSERT INTO users (email, password, role, tokens) VALUES ('%1', '%2', 'gen', 20);";
-const selectUserQuery = "SELECT * FROM users WHERE email = '%1';";
+const reduceTokensQuery = "UPDATE users SET tokens = tokens - 1 WHERE userid = '%1';";
+const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
+const consumptionInsertQuery = "INSERT INTO userApiConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);"
+const selectUserQuery =  `
+    SELECT u.id AS user_id, u.email, u.password, uc.tokens, uc.httpRequests 
+    FROM users u
+    LEFT JOIN userAPIConsumption uc 
+    ON u.id = uc.userID
+    WHERE u.email = '%1';
+`;
+const selectAllUsersQuery = `
+    SELECT u.id AS user_id, u.email, u.password, uc.tokens, uc.httpRequests 
+    FROM users u
+    LEFT JOIN userAPIConsumption uc 
+    ON u.id = uc.userID;
+`;
 
 // JSON constants
 const jsonGet = "GET";
@@ -154,6 +167,17 @@ class Repository {
         }
     }
 
+    async selectAllUsers() {
+        try {
+            const result = await this.runQuery(selectAllUsersQuery);
+            console.log(result);
+            return result;
+        } catch (err) {
+            console.log(err);
+            return err;
+        }
+    }
+
     /**
      * Asynchronous function to insert a user
      * @param {*} email 
@@ -162,10 +186,12 @@ class Repository {
      */
     async insertUser(email, password) {
         try {
-            const query = insertUserQuery.replace('%1', email).replace('%2', password);
-            const result = await this.runQuery(query);
-            console.log(result);
-
+            const initalQuery = insertUserQuery.replace('%1', email).replace('%2', password);
+            const insertUserResult = await this.runQuery(initalQuery);
+            console.log(insertUserResult);
+            const followUpQuery = consumptionInsertQuery.replace('%1', insertUserResult.insertId);
+            const inserConsumptionResult = await this.runQuery(followUpQuery);
+            console.log(inserConsumptionResult);
             return { success: true, result: result };
         } catch (err) {
             console.log(err);
