@@ -41,6 +41,8 @@ const databaseTableConst = `
             );
         `;
 const reduceTokensQuery = "UPDATE userAPIConsumption SET tokens = tokens - 1 WHERE userid = '%1';";
+const selectTokensQuery = "SELECT tokens FROM userAPIConsumption WHERE userid = '%1';";
+const changeTokenCountQuery = "UPDATE userAPIConsumption SET tokens = '%1' WHERE userid = '%2';";
 const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests = httpRequests + 1 WHERE userid = '%1';";
 const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
 const consumptionInsertQuery = "INSERT INTO userAPIConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);";
@@ -52,13 +54,21 @@ const selectUserQuery = `
     WHERE u.email = '%1';
 `;
 const selectAllUsersQuery = `
-    SELECT u.id AS user_id, u.email, u.password, uc.tokens, uc.httpRequests 
+    SELECT u.id AS user_id, u.email, uc.tokens, uc.httpRequests 
     FROM users u
     LEFT JOIN userAPIConsumption uc 
     ON u.id = uc.userID;
 `;
 
-const selectAPIStats = "SELECT * FROM apiCalls;";
+const selectAPIStats = "SELECT method, endpoint, requests FROM apiCalls;";
+const insertNewFavouriteRecipe = "INSERT INTO favourites (userID, title, ingredients, directions) VALUES (%1, '%2', '%3', '%4');";
+const selectFavouriteRecipes = "SELECT id AS recipeId, title, ingredients, directions FROM favourites WHERE userID = '%1';";
+const deleteFavouriteRecipe = "DELETE FROM favourites WHERE id = '%1';";
+const deleteUser = "DELETE FROM users WHERE email = '%1';";
+
+const selectApiCall = "SELECT * FROM apiCalls WHERE method = '%1' AND endpoints = '%2';";
+const insertApiCall = "INSERT INTO apiCalls (method, endpoints, requests) VALUES ('%1', '%2', 1);";
+const updateApiCall = "UPDATE apiCalls SET requests = request + 1 WHERE method = '%1' AND endpoints = '%2';";
 
 // JSON constants
 const jsonGet = "GET";
@@ -162,10 +172,10 @@ class Repository {
             const query = selectUserQuery.replace("%1", email);
             const result = await this.runQuery(query);
             console.log(result);
-            return result;
+            return { success: true, result: result };
         } catch (err) {
             console.log(err);
-            return err;
+            return { success: false, error: err };
         }
     }
 
@@ -173,10 +183,10 @@ class Repository {
         try {
             const result = await this.runQuery(selectAllUsersQuery);
             console.log(result);
-            return result;
+            return { success: true, result: result };
         } catch (err) {
             console.log(err);
-            return err;
+            return { success: false, error: err };
         }
     }
 
@@ -184,10 +194,10 @@ class Repository {
         try {
             const result = await this.runQuery(selectAPIStats);
             console.log(result);
-            return result;
+            return { success: true, result: result };
         } catch (err) {
             console.log(err);
-            return err;
+            return { success: false, error: err };
         }
     }
 
@@ -210,7 +220,18 @@ class Repository {
 
             return { success: false, error: err };
         }
+    }
 
+    async deleteUser(email) {
+        try {
+            const query = deleteUser.replace('%1', email);
+            const result = await this.runQuery(query);
+
+            return { success: true, result: result };
+        } catch (err) {
+
+            return { success: false, error: err };
+        }
     }
 
     /**
@@ -231,9 +252,130 @@ class Repository {
         }
     }
 
+    async getUserTokens(id) {
+        try {
+            const query = selectTokensQuery.replace('%1', id);
+            const result = await this.runQuery(query);
+            console.log(result);
+
+            return { success: true, result: result.tokens };
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
+
+    async changeTokens(id, newTokens) {
+        try {
+            const query = changeTokenCountQuery.replace('%1', newTokens)
+                .replace('%2', id);
+            const result = await this.runQuery(query);
+            console.log(result);
+
+            return { success: true, result: result };
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
+
     async incrementUserAPIConsumption(id) {
         try {
             const query = incrementUserAPIConsumption.replace('%1', id);
+            const result = await this.runQuery(query);
+            console.log(result);
+
+            return { success: true, result: result };
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
+
+    async insertFavouriteRecipe(id, recipe) {
+        try {
+            const query = insertNewFavouriteRecipe.replace('%1', id)
+                .replace('%2', recipe.title)
+                .replace('%3', recipe.ingredients)
+                .replace('%4', recipe.directions);
+            const result = await this.runQuery(query);
+            console.log(result);
+
+            return { success: true, result: result };
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
+
+    async selectUsersFavouriteRecipes(id) {
+        try {
+            const query = selectFavouriteRecipes.replace('%1', id);
+            const result = await this.runQuery(query);
+            console.log(result);
+
+            return { success: true, result: result };
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
+
+    async deleteFavourite(id) {
+        try {
+            const query = deleteFavouriteRecipe.replace('%1', id);
+            const result = await this.runQuery(query);
+            console.log(result);
+
+            return { success: true, result: result };
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
+
+    async incrementAPICalls(method, endpoint){
+        try {
+            const check = await this.selectApiCall(method, endpoint);
+            if(!check.success) {
+                return check;
+            }
+
+            if(check.result.length > 0){
+                const query = updateApiCall.replace('%1', method)
+                            .replace('%2', endpoint);
+                const result = await this.runQuery(query);
+                console.log(result);
+
+                return { success: true, result: result };
+            } else {
+                const insertResult = await this.insertApiCalls(method, endpoint);
+                return insertResult;
+            }
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
+
+    async insertApiCalls(method, endpoint) {
+        try {
+            const query = insertApiCall.replace('%1', method)
+                            .replace('%2', endpoint);
+            const result = await this.runQuery(query);
+            console.log(result);
+
+            return { success: true, result: result };
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
+
+    async selectApiCall(method, endpoint) {
+        try {
+            const query = selectApiCall.replace('%1', method)
+                            .replace('%2', endpoint);
             const result = await this.runQuery(query);
             console.log(result);
 
@@ -376,7 +518,12 @@ class Server {
 
         // Check if the email is already in use
         const checkUser = await this.repo.selectUser(email);
-        if (checkUser.length > 0) {
+        if (!checkUser.success) {
+            this.serverError(res);
+            return;
+        }
+
+        if (checkUser.result.length > 0) {
             res.writeHead(400);
             res.write(JSON.stringify({ message: messages.messages.EmailUsed }));
             res.end();
@@ -385,11 +532,15 @@ class Server {
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-        await this.repo.insertUser(email, hashedPassword);
-        const user = await this.repo.selectUser(email);
+        const insertResult = await this.repo.insertUser(email, hashedPassword);
+
+        if (!insertResult.success) {
+            this.serverError(res);
+            return;
+        }
 
         // Create a JWT token
-        const token = jwt.sign({ email: email, userID: user.id, role: user.role }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email: email, userID: insertResult.result.insertId, role: userRoleConst }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
         // Set the cookie
@@ -397,9 +548,9 @@ class Server {
         res.writeHead(200);
         res.write(JSON.stringify({
             message: messages.messages.RegisterSuccess,
-            role: user.role,
-            tokens: user.tokens,
-            httpRequests: user.httpRequests,
+            role: userRoleConst,
+            tokens: 20,
+            httpRequests: 0,
             expiresAt: expiresAt.toISOString()
         }));
         res.end();
@@ -419,7 +570,11 @@ class Server {
 
         // Check if the user exists
         const foundUsers = await this.repo.selectUser(email);
-        if (foundUsers.length !== 1 || !(await bcrypt.compare(password, foundUsers[0].password))) {
+        if (!foundUsers.success) {
+            this.serverError(res);
+            return;
+        }
+        if (foundUsers.result.length !== 1 || !(await bcrypt.compare(password, foundUsers[0].password))) {
             res.writeHead(401);
 
             res.write(JSON.stringify({ message: messages.messages.InvalidLogin }));
@@ -436,49 +591,194 @@ class Server {
         res.setHeader(setCookie, cookieTemplate(token, this.sessionDuration)); // 7200 = 2 hours
         res.writeHead(200);
 
-        if (user.role === 'admin') {
-            res.write(JSON.stringify({
-                message: messages.messages.LoginSuccess,
-                role: user.role,
-                tokens: user.tokens,
-                httpRequests: user.httpRequests,
-                expiresAt: expiresAt.toISOString()
-            }));
-            res.end();
-        } else {
-            res.write(JSON.stringify({
-                message: messages.messages.LoginSuccess,
-                role: user.role,
-                tokens: user.tokens,
-                httpRequests: user.httpRequests,
-                expiresAt: expiresAt.toISOString()
-            }));
-            res.end();
-        }
+        res.write(JSON.stringify({
+            message: messages.messages.LoginSuccess,
+            role: user.role,
+            tokens: user.tokens,
+            httpRequests: user.httpRequests,
+            expiresAt: expiresAt.toISOString()
+        }));
+        res.end();
+
+        await this.repo.incrementUserAPIConsumption(user.id);
     }
 
     async getAllUsers(req, res) {
-        // const user = this.authenticateJWT(req, res);
-        // if (!user) {
-        //     return;
-        // }
-        res.writeHead(200);
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
 
-        const users = await this.repo.selectAllUsers();
-        res.write(JSON.stringify(users));
-        res.end();
+        if (user.role === 'admin') {
+
+
+            const users = await this.repo.selectAllUsers();
+            if (!users.success) {
+                this.serverError(res);
+                return;
+            }
+
+            res.writeHead(200);
+            res.write(JSON.stringify(users.result));
+            res.end();
+        } else {
+            this.unauthorizedPage(res);
+        }
+
+        await this.repo.incrementUserAPIConsumption(user.userID);
     }
 
     async getAPIStats(req, res) {
-        // const user = this.authenticateJWT(req, res);
-        // if (!user) {
-        //     return;
-        // }
-        res.writeHead(200);
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
 
-        const users = await this.repo.selectAPIStats();
-        res.write(JSON.stringify(users));
+        if (user.role === 'admin') {
+
+
+            const stats = await this.repo.selectAPIStats();
+            if (!stats.success) {
+                this.serverError(res);
+                return;
+            }
+
+            res.writeHead(200);
+            res.write(JSON.stringify(stats.result));
+            res.end();
+        } else {
+            this.unauthorizedPage(res);
+        }
+
+        await this.repo.incrementUserAPIConsumption(user.userID);
+
+    }
+
+    async getFavourites(req, res) {
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
+
+
+
+        const recipes = await this.repo.selectFavouriteRecipes();
+        if (!recipes.success) {
+            this.serverError(res);
+            return;
+        }
+
+        res.writeHead(200);
+        res.write(JSON.stringify(recipes));
         res.end();
+
+        await this.repo.incrementUserAPIConsumption(user.userID);
+    }
+
+    async addFavourite(req, res) {
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
+
+        const info = await this.parseBody(req);
+        const result = await this.repo.insertFavouriteRecipe(user.userID, info.recipe);
+        if (!result.success) {
+            this.serverError(res);
+            return;
+        }
+
+        res.writeHead(200);
+        res.write(JSON.stringify({
+            message: messages.messages.NewFavouriteAdded
+        }));
+        res.end();
+
+        await this.repo.incrementUserAPIConsumption(user.userID);
+    }
+
+    async deleteFavourites(req, res) {
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
+
+
+        const reqUrl = url.parse(req.url, true);
+        const id = reqUrl.query.recipe;
+        const result = await this.repo.deleteFavourite(id);
+        if (!result.success) {
+            this.serverError(res);
+            return;
+        }
+
+        
+        res.writeHead(200);
+        res.write(JSON.stringify({
+            message: messages.messages.RemovedFavourite
+        }));
+        res.end();
+
+        await this.repo.incrementUserAPIConsumption(user.userID);
+    }
+
+    async deleteUser(req, res) {
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
+
+        if (user.role === 'admin') {
+
+
+            const reqUrl = url.parse(req.url, true);
+            const id = reqUrl.query.user;
+            const result = await this.repo.deleteUser(id);
+            if (!result.success) {
+                this.serverError(res);
+                return;
+            }
+
+            res.writeHead(200);
+            res.write(JSON.stringify({
+                message: messages.messages.RemovedUser
+            }));
+            res.end();
+        } else {
+            this.unauthorizedPage(res);
+        }
+
+        await this.repo.incrementUserAPIConsumption(user.userID);
+    }
+
+    async changeTokenCount(req, res) {
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
+
+        const reqUrl = url.parse(req.url, true);
+        const id = reqUrl.query.user;
+        if (user.role === 'admin') {
+
+
+            const info = await this.parseBody(req);
+            const result = await this.repo.changeTokens(id, info.newTokens);
+            if (!result.success) {
+                this.serverError(res);
+                return;
+            }
+
+            res.writeHead(200);
+            res.write(JSON.stringify({
+                message: messages.messages.TokensUpdated
+            }));
+            res.end();
+        } else {
+            this.unauthorizedPage(res);
+        }
+
+        await this.repo.incrementUserAPIConsumption(user.userID);
     }
 
     async getRecipe(req, res) {
@@ -486,17 +786,33 @@ class Server {
         if (!user) {
             return;
         }
-        const reqUrl = url.parse(req.url, true);
-        res.writeHead(200);
+        const tokens = await this.repo.getUserTokens();
+        if (tokens > 0) {
+            const reqUrl = url.parse(req.url, true);
 
-        //Get the recipe from the API
-        const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
-        await this.repo.reduceTokens(user.userID);
+            //Get the recipe from the API
+            const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
+            const result = await this.repo.reduceTokens(user.userID);
+            if (!result.success) {
+                this.serverError(res);
+                return;
+            }
 
-        //Write the response
-        res.write(JSON.stringify(recipe));
-        res.end();
+            //Write the response
+            res.writeHead(200);
+            res.write(JSON.stringify(recipe));
+            res.end();
+        } else {
+            res.writeHead(400);
+            res.write(JSON.stringify({
+                message: messages.messages.OutOfTokens
+            }));
+            res.end();
+        }
+
+        await this.repo.incrementUserAPIConsumption(user.userID);
     }
+
     /**
      * Logs out a user
      * @param {*} res 
@@ -511,7 +827,7 @@ class Server {
         res.end();
     }
 
-    pageNotFoundResponse(res){
+    pageNotFoundResponse(res) {
         res.writeHead(404);
 
         //Response for unimplemented server
@@ -524,6 +840,93 @@ class Server {
         res.end();
     }
 
+    unauthorizedPage(res) {
+        res.writeHead(401);
+
+        //Response for unimplemented server
+        const serverRes = JSON.stringify({
+            message: messages.messages.NotAuthorized
+        });
+
+        //Write response
+        res.write(serverRes);
+        res.end();
+    }
+
+    serverError(res) {
+        res.writeHead(500);
+
+        //Response for unimplemented server
+        const serverRes = JSON.stringify({
+            message: messages.messages.ServerError
+        });
+
+        //Write response
+        res.write(serverRes);
+        res.end();
+    }
+
+    async handleGet(req, res, path) {
+        switch (path) {
+            case generatePath:
+                this.getRecipe(req, res);
+                break;
+            case "users":
+                await this.getAllUsers(req, res);
+                break;
+            case "apiStats":
+                await this.getAPIStats(req, res);
+                break;
+            case "favourites":
+                await this.getFavourites(req, res);
+                break;
+            default:
+                this.pageNotFoundResponse(res);
+        }
+    }
+
+    async handlePost(req, res, path) {
+        switch (path) {
+            case signupPath:
+                await this.userSignUp(req, res);
+                break;
+            case loginPath:
+                await this.userLogin(req, res);
+                break;
+            case logoutPath:
+                this.userLogout(res);
+                break;
+            case "favourites":
+                await this.addFavourite(req, res);
+                break;
+            default:
+                this.pageNotFoundResponse(res);
+        }
+    }
+
+    async handlePut(req, res, path) {
+        switch (path) {
+            case "users":
+                this.changeTokenCount(req, res);
+                break;
+            default:
+                this.pageNotFoundResponse(res);
+        }
+    }
+
+    async handleDelete(req, res, path) {
+        switch (path) {
+            case "users":
+                this.deleteUser(req, res);
+                break;
+            case "favourites":
+                this.deleteFavourites(req, res);
+                break;
+            default:
+                this.pageNotFoundResponse(res);
+        }
+    }
+
     /**
      * Asynchronous function to handle a request
      * @param {*} req 
@@ -534,53 +937,39 @@ class Server {
         //Parse the request URL
         const reqUrl = url.parse(req.url, true);
         const path = reqUrl.pathname.split('/');
+        console.log(path);
         if (path[1] === 'v1') {
             //Check the request method
-            if (req.method === jsonPost) { //POST request handling
-                switch(path[2]){
-                    case signupPath:
-                        await this.userSignUp(req, res);
-                        break;
-                    case loginPath:
-                        await this.userLogin(req, res);
-                        break;
-                    case logoutPath:
-                        this.userLogout(res);
-                        break;
-                    default:
-                        this.pageNotFoundResponse(res);
-                }
-            } else if (req.method === jsonGet) { //GET request handling
-                switch(path[2]){
-                    case generatePath:
-                        this.getRecipe(req, res);
-                        break;
-                    case "users":
-                        await this.getAllUsers(req, res);
-                        break;
-                    case "apiStats":
-                        await this.getAPIStats(req, res);
-                        break;
-                    default:
-                        this.pageNotFoundResponse(res);
-                }
-            } else { //Anything but a GET or POST is unimplemented
-                res.writeHead(501); //501 - unimplemented (server error)
+            switch (req.method) {
+                case jsonPost: //POST request handling
+                    await this.handlePost(req, res, path[2]);
+                    break;
+                case jsonGet: //GET request handling
+                    await this.handleGet(req, res, path[2]);
+                    break;
+                case "PUT":
+                    await this.handlePut(req, res, path[2]);
+                    break;
+                case "DELETE":
+                    await this.handleDelete(req, res, path[2]);
+                    break;
+                default: //Anything but a GET or POST is unimplemented
+                    res.writeHead(501); //501 - unimplemented (server error)
 
-                //Response for unimplemented server
-                const serverRes = JSON.stringify({
-                    message: messages.messages.BadRequest
-                });
+                    //Response for unimplemented server
+                    const serverRes = JSON.stringify({
+                        message: messages.messages.BadRequest
+                    });
 
-                //Write response
-                res.write(serverRes);
-                res.end();
+                    //Write response
+                    res.write(serverRes);
+                    res.end();
             }
         } else {
             this.pageNotFoundResponse(res);
         }
 
-
+        await this.repo.incrementAPICalls(req.method, reqUrl.pathname);
     }
 
     /**

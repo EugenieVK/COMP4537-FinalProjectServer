@@ -10,5 +10,12 @@ exports.messages = {
     InvalidToken: "Access Denied: Invalid Token",
     DatabaseInit: "Database Initialized!",
     DatabaseError: "Error initializing database or server:",
-    ServerRunning: "Server is running at port {port}"
+    ServerRunning: "Server is running at port {port}",
+    OutOfTokens: "You've run out of coins for the Meal Mancer!",
+    NotAuthorized: "This magic is not for you!",
+    NewFavouriteAdded: "New favourite recipe!",
+    RemovedFavourite: "Recipe forgotten",
+    TokensUpdated: "Updated user tokens!",
+    RemovedUser: "User has been deleted!",
+    ServerError: "Something went wrong!"
 }
