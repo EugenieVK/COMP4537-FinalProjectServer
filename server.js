@@ -549,6 +549,8 @@ class Server {
                 this.getRecipe(req, res);
             } else if (path === "/users") {
                 await this.getAllUsers(req, res);
+            } else if(path === "/apiStats"){
+                await this.getAPIStats(req, res);
             } else {
                 res.writeHead(404);
 
