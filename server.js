@@ -441,6 +441,7 @@ class Server {
         res.writeHead(200);
 
         if(user.role === 'admin'){
+            console.log("admin info sent");
             const [users, apiStats] = await Promise.all(this.repo.selectAllUsers(), this.repo.selectAPIStats());
             res.write(JSON.stringify({
                 message: messages.messages.LoginSuccess,
@@ -461,10 +462,7 @@ class Server {
                 expiresAt: expiresAt.toISOString()
             }));
             res.end();
-        }
-        console.log("RESPONSE HAS BEEN SENT?????");
-        
-       
+        }       
     }
 
     /**
