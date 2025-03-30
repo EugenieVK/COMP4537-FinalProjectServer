@@ -45,7 +45,7 @@ const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests 
 const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
 const consumptionInsertQuery = "INSERT INTO userAPIConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);";
 const selectUserQuery =  `
-    SELECT u.id AS user_id, u.email, u.password, uc.tokens, uc.httpRequests 
+    SELECT u.id AS user_id, u.email, u.password, uc.tokens, uc.httpRequests, u.role 
     FROM users u
     LEFT JOIN userAPIConsumption uc 
     ON u.id = uc.userID
