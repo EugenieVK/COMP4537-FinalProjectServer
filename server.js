@@ -403,7 +403,7 @@ class Server {
             message: messages.messages.RegisterSuccess,
             role: user.role,
             tokens: user.tokens,
-            httpRequests: user.httpRequests,
+            apiCalls: user.httpRequests,
             expiresAt: expiresAt.toISOString()
         }));
         res.end();
@@ -447,7 +447,7 @@ class Server {
                 message: messages.messages.LoginSuccess,
                 role: user.role,
                 tokens: user.tokens,
-                httpRequests: user.httpRequests,
+                apiCalls: user.httpRequests,
                 users: users,
                 apiStats: apiStats,
                 expiresAt: expiresAt.toISOString()
@@ -458,7 +458,7 @@ class Server {
                 message: messages.messages.LoginSuccess,
                 role: user.role,
                 tokens: user.tokens,
-                httpRequests: user.httpRequests,
+                apiCalls: user.httpRequests,
                 expiresAt: expiresAt.toISOString()
             }));
             res.end();
