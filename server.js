@@ -41,9 +41,9 @@ const databaseTableConst = `
             );
         `;
 const reduceTokensQuery = "UPDATE userAPIConsumption SET tokens = tokens - 1 WHERE userid = '%1';";
-const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests = httpRequests + 1 WHERE userid = '%1';"
+const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests = httpRequests + 1 WHERE userid = '%1';";
 const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
-const consumptionInsertQuery = "INSERT INTO userAPIConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);"
+const consumptionInsertQuery = "INSERT INTO userAPIConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);";
 const selectUserQuery =  `
     SELECT u.id AS user_id, u.email, u.password, uc.tokens, uc.httpRequests 
     FROM users u
@@ -57,6 +57,8 @@ const selectAllUsersQuery = `
     LEFT JOIN userAPIConsumption uc 
     ON u.id = uc.userID;
 `;
+
+const selectAPIStats = "SELECT * FROM apiCalls;";
 
 // JSON constants
 const jsonGet = "GET";
@@ -171,6 +173,17 @@ class Repository {
     async selectAllUsers() {
         try {
             const result = await this.runQuery(selectAllUsersQuery);
+            console.log(result);
+            return result;
+        } catch (err) {
+            console.log(err);
+            return err;
+        }
+    }
+
+    async selectAPIStats() {
+        try {
+            const result = await this.runQuery(selectAPIStats);
             console.log(result);
             return result;
         } catch (err) {
@@ -376,8 +389,8 @@ class Server {
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-        const result = await this.repo.insertUser(email, hashedPassword);
-        console.log(result);
+        await this.repo.insertUser(email, hashedPassword);
+        const user = await this.repo.selectUser(email);
 
         // Create a JWT token
         const token = jwt.sign({ email }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
@@ -388,8 +401,9 @@ class Server {
         res.writeHead(200);
         res.write(JSON.stringify({
             message: messages.messages.RegisterSuccess,
-            role: userRoleConst,
-            tokens: 20,
+            role: user.role,
+            tokens: user.tokens,
+            httpRequests: user.httpRequests,
             expiresAt: expiresAt.toISOString()
         }));
         res.end();
@@ -425,12 +439,28 @@ class Server {
         // Set the cookie
         res.setHeader(setCookie, cookieTemplate(token, this.sessionDuration)); // 7200 = 2 hours
         res.writeHead(200);
-        res.write(JSON.stringify({
-            message: messages.messages.LoginSuccess,
-            role: user.role,
-            tokens: user.tokens,
-            expiresAt: expiresAt.toISOString()
-        }));
+
+        if(user.role === 'admin'){
+            const [users, apiStats] = await Promise.all(this.repo.selectAllUsers(), this.repo.selectAPIStats());
+            res.write(JSON.stringify({
+                message: messages.messages.LoginSuccess,
+                role: user.role,
+                tokens: user.tokens,
+                httpRequests: user.httpRequests,
+                users: users,
+                apiStats: apiStats,
+                expiresAt: expiresAt.toISOString()
+            }));
+        } else {
+            res.write(JSON.stringify({
+                message: messages.messages.LoginSuccess,
+                role: user.role,
+                tokens: user.tokens,
+                httpRequests: user.httpRequests,
+                expiresAt: expiresAt.toISOString()
+            }));
+        }
+        
         res.end();
     }
 
