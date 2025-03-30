@@ -190,9 +190,9 @@ class Repository {
             const insertUserResult = await this.runQuery(initalQuery);
             console.log(insertUserResult);
             const followUpQuery = consumptionInsertQuery.replace('%1', insertUserResult.insertId);
-            const inserConsumptionResult = await this.runQuery(followUpQuery);
+            const insertConsumptionResult = await this.runQuery(followUpQuery);
             console.log(inserConsumptionResult);
-            return { success: true, result: result };
+            return { success: true, result: [insertUserResult, insertConsumptionResult]};
         } catch (err) {
             console.log(err);
             return { success: false, error: err };
