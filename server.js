@@ -44,7 +44,7 @@ const reduceTokensQuery = "UPDATE userAPIConsumption SET tokens = tokens - 1 WHE
 const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests = httpRequests + 1 WHERE userid = '%1';";
 const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
 const consumptionInsertQuery = "INSERT INTO userAPIConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);";
-const selectUserQuery =  `
+const selectUserQuery = `
     SELECT u.id AS user_id, u.email, u.password, uc.tokens, uc.httpRequests, u.role 
     FROM users u
     LEFT JOIN userAPIConsumption uc 
@@ -70,11 +70,10 @@ const dataConst = "data";
 const endConst = "end";
 
 // Path constants
-const signupPath = "/signup";
-const loginPath = "/login";
-const logoutPath = "/logout";
-const generatePath = "/generate";
-const generatePathAlt = "/generate/";
+const signupPath = "signup";
+const loginPath = "login";
+const logoutPath = "logout";
+const generatePath = "generate";
 
 // Cookie constants
 const setCookie = "Set-Cookie";
@@ -206,7 +205,7 @@ class Repository {
             const followUpQuery = consumptionInsertQuery.replace('%1', insertUserResult.insertId);
             const insertConsumptionResult = await this.runQuery(followUpQuery);
 
-            return { success: true, result: [insertUserResult, insertConsumptionResult]};
+            return { success: true, result: [insertUserResult, insertConsumptionResult] };
         } catch (err) {
 
             return { success: false, error: err };
@@ -232,7 +231,7 @@ class Repository {
         }
     }
 
-    async incrementUserAPIConsumption(id){
+    async incrementUserAPIConsumption(id) {
         try {
             const query = incrementUserAPIConsumption.replace('%1', id);
             const result = await this.runQuery(query);
@@ -289,7 +288,7 @@ class RecipeAPI {
             const sectionContent = sectionParts[1];
 
             const splitContent = sectionContent.split("--").map(line => line.trim()).filter(line => line !== "");
-            if(splitContent.length > 1){
+            if (splitContent.length > 1) {
                 formattedRecipe[sectionName] = splitContent;
             } else {
                 formattedRecipe[sectionName] = sectionContent;
@@ -354,7 +353,7 @@ class Server {
         const cookies = parse(req.headers.cookie || "");
         try {
             // Verify the JWT token
-            return jwt.verify(cookies.accessToken, this.publicKey, {algorithms: [algorithmConst]});
+            return jwt.verify(cookies.accessToken, this.publicKey, { algorithms: [algorithmConst] });
         } catch (err) {
             res.writeHead(401);
             res.write(JSON.stringify({ error: messages.messages.InvalidToken }));
@@ -390,7 +389,7 @@ class Server {
         const user = await this.repo.selectUser(email);
 
         // Create a JWT token
-        const token = jwt.sign({ email: email, userID: user.id }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email: email, userID: user.id, role: user.role }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
         // Set the cookie
@@ -422,7 +421,7 @@ class Server {
         const foundUsers = await this.repo.selectUser(email);
         if (foundUsers.length !== 1 || !(await bcrypt.compare(password, foundUsers[0].password))) {
             res.writeHead(401);
-            
+
             res.write(JSON.stringify({ message: messages.messages.InvalidLogin }));
             res.end();
             return;
@@ -430,14 +429,14 @@ class Server {
 
         // Create a JWT token
         const user = foundUsers[0];
-        const token = jwt.sign({ email: email, userID: user.id }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email: email, userID: user.id, role: user.role }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
         // Set the cookie
         res.setHeader(setCookie, cookieTemplate(token, this.sessionDuration)); // 7200 = 2 hours
         res.writeHead(200);
 
-        if(user.role === 'admin'){
+        if (user.role === 'admin') {
             res.write(JSON.stringify({
                 message: messages.messages.LoginSuccess,
                 role: user.role,
@@ -455,14 +454,14 @@ class Server {
                 expiresAt: expiresAt.toISOString()
             }));
             res.end();
-        }       
+        }
     }
 
     async getAllUsers(req, res) {
-        // const user = this.authenticateJWT(req, res);
-        // if (!user) {
-        //     return;
-        // }
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
         res.writeHead(200);
 
         const users = await this.repo.selectAllUsers();
@@ -471,10 +470,10 @@ class Server {
     }
 
     async getAPIStats(req, res) {
-        // const user = this.authenticateJWT(req, res);
-        // if (!user) {
-        //     return;
-        // }
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
         res.writeHead(200);
 
         const users = await this.repo.selectAPIStats();
@@ -482,16 +481,17 @@ class Server {
         res.end();
     }
 
-    async getRecipe(req, res){
-        const user = this.authenticateJWT(req, res);
-        if (!user) {
-            return;
-        }
+    async getRecipe(req, res) {
+        // const user = this.authenticateJWT(req, res);
+        // if (!user) {
+        //     return;
+        // }
+        const reqUrl = url.parse(req.url, true);
         res.writeHead(200);
 
         //Get the recipe from the API
         const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
-        await this.repo.reduceTokens(user.userID);
+        // await this.repo.reduceTokens(user.userID);
 
         //Write the response
         res.write(JSON.stringify(recipe));
@@ -501,13 +501,26 @@ class Server {
      * Logs out a user
      * @param {*} res 
      */
-    userLogout(res){
+    userLogout(res) {
         // Set the cookie
         res.setHeader(setCookie, logoutCookie);
         res.writeHead(200);
 
         // Write the response
-        res.write(JSON.stringify({message: messages.messages.Logout}));
+        res.write(JSON.stringify({ message: messages.messages.Logout }));
+        res.end();
+    }
+
+    pageNotFoundResponse(res){
+        res.writeHead(404);
+
+        //Response for unimplemented server
+        const serverRes = JSON.stringify({
+            message: messages.messages.PageNotFound
+        });
+
+        //Write response
+        res.write(serverRes);
         res.end();
     }
 
@@ -520,61 +533,51 @@ class Server {
     async handleRequest(req, res) {
         //Parse the request URL
         const reqUrl = url.parse(req.url, true);
-        const path = reqUrl.pathname;
-        //Check the request method
-        if (req.method === jsonPost) { //POST request handling
-            //Get the request body
-            if (path === signupPath) {
-                await this.userSignUp(req, res);
-            } else if (path === loginPath) {
-                await this.userLogin(req, res);
-            } else if(path === logoutPath) {
-                this.userLogout(res);
-                
-            } else {
-                res.writeHead(404);
+        const path = reqUrl.pathname.split('/');
+        if (path[1] === 'v1') {
+            //Check the request method
+            if (req.method === jsonPost) { //POST request handling
+                switch(path[2]){
+                    case signupPath:
+                        await this.userSignUp(req, res);
+                        break;
+                    case loginPath:
+                        await this.userLogin(req, res);
+                        break;
+                    case logoutPath:
+                        this.userLogout(res);
+                        break;
+                    default:
+                        this.pageNotFoundResponse(res);
+                }
+            } else if (req.method === jsonGet) { //GET request handling
+                switch(path[2]){
+                    case generatePath:
+                        this.getRecipe(req, res);
+                        break;
+                    case "users":
+                        await this.getAllUsers(req, res);
+                        break;
+                    case "apiStats":
+                        await this.getAPIStats(req, res);
+                        break;
+                    default:
+                        this.pageNotFoundResponse(res);
+                }
+            } else { //Anything but a GET or POST is unimplemented
+                res.writeHead(501); //501 - unimplemented (server error)
 
                 //Response for unimplemented server
                 const serverRes = JSON.stringify({
-                    message: messages.messages.PageNotFound
+                    message: messages.messages.BadRequest
                 });
 
                 //Write response
                 res.write(serverRes);
                 res.end();
             }
-        } else if (req.method === jsonGet) { //GET request handling
-            //Handle the get Request
-            if (path === generatePath || path === generatePathAlt) {
-                this.getRecipe(req, res);
-            } else if (path === "/users") {
-                await this.getAllUsers(req, res);
-            } else if(path === "/apiStats"){
-                await this.getAPIStats(req, res);
-            } else {
-                res.writeHead(404);
-
-                //Response for unimplemented server
-                const serverRes = JSON.stringify({
-                    message: messages.messages.PageNotFound
-                });
-
-                //Write response
-                res.write(serverRes);
-                res.end();
-            }
-        } else { //Anything but a GET or POST is unimplemented
-            res.writeHead(501); //501 - unimplemented (server error)
-
-            //Response for unimplemented server
-            const serverRes = JSON.stringify({
-                message: messages.messages.BadRequest
-            });
-
-            //Write response
-            res.write(serverRes);
-            res.end();
         }
+
 
     }
 
