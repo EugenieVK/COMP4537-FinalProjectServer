@@ -42,7 +42,7 @@ const databaseTableConst = `
         `;
 const reduceTokensQuery = "UPDATE users SET tokens = tokens - 1 WHERE userid = '%1';";
 const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
-const consumptionInsertQuery = "INSERT INTO userApiConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);"
+const consumptionInsertQuery = "INSERT INTO userAPIConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);"
 const selectUserQuery =  `
     SELECT u.id AS user_id, u.email, u.password, uc.tokens, uc.httpRequests 
     FROM users u
