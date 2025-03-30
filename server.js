@@ -442,7 +442,7 @@ class Server {
 
         if(user.role === 'admin'){
             console.log("admin info sent");
-            const [users, apiStats] = await Promise.all(this.repo.selectAllUsers(), this.repo.selectAPIStats());
+            const [users, apiStats] = await Promise.all([this.repo.selectAllUsers(), this.repo.selectAPIStats()]);
             res.write(JSON.stringify({
                 message: messages.messages.LoginSuccess,
                 role: user.role,
