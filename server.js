@@ -352,9 +352,6 @@ class Server {
     authenticateJWT(req, res) {
         // Get the cookie from the request
         const cookies = parse(req.headers.cookie || "");
-        console.log(cookies);
-        console.log(cookies.accessToken);
-        console.log(testConst);
         try {
             // Verify the JWT token
             return jwt.verify(cookies.accessToken, this.publicKey, {algorithms: [algorithmConst]});
@@ -393,7 +390,7 @@ class Server {
         const user = await this.repo.selectUser(email);
 
         // Create a JWT token
-        const token = jwt.sign({ email }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email: email, userID: user.id }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
         // Set the cookie
@@ -403,7 +400,7 @@ class Server {
             message: messages.messages.RegisterSuccess,
             role: user.role,
             tokens: user.tokens,
-            apiCalls: user.httpRequests,
+            httpRequests: user.httpRequests,
             expiresAt: expiresAt.toISOString()
         }));
         res.end();
@@ -433,7 +430,7 @@ class Server {
 
         // Create a JWT token
         const user = foundUsers[0];
-        const token = jwt.sign({ email }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email: email, userID: user.id }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
         // Set the cookie
@@ -441,15 +438,11 @@ class Server {
         res.writeHead(200);
 
         if(user.role === 'admin'){
-            console.log("admin info sent");
-            const [users, apiStats] = await Promise.all([this.repo.selectAllUsers(), this.repo.selectAPIStats()]);
             res.write(JSON.stringify({
                 message: messages.messages.LoginSuccess,
                 role: user.role,
                 tokens: user.tokens,
-                apiCalls: user.httpRequests,
-                users: users,
-                apiStats: apiStats,
+                httpRequests: user.httpRequests,
                 expiresAt: expiresAt.toISOString()
             }));
             res.end();
@@ -458,13 +451,40 @@ class Server {
                 message: messages.messages.LoginSuccess,
                 role: user.role,
                 tokens: user.tokens,
-                apiCalls: user.httpRequests,
+                httpRequests: user.httpRequests,
                 expiresAt: expiresAt.toISOString()
             }));
             res.end();
         }       
     }
 
+    async getAllUsers(req, res) {
+        // const user = this.authenticateJWT(req, res);
+        // if (!user) {
+        //     return;
+        // }
+        res.writeHead(200);
+
+        const users = await this.repo.selectAllUsers();
+        res.write(JSON.stringify(users));
+        res.end();
+    }
+
+    async getRecipe(req, res){
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
+        res.writeHead(200);
+
+        //Get the recipe from the API
+        const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
+        await this.repo.reduceTokens(user.userID);
+
+        //Write the response
+        res.write(JSON.stringify(recipe));
+        res.end();
+    }
     /**
      * Logs out a user
      * @param {*} res 
@@ -514,19 +534,9 @@ class Server {
         } else if (req.method === jsonGet) { //GET request handling
             //Handle the get Request
             if (path === generatePath || path === generatePathAlt) {
-                const user = this.authenticateJWT(req, res);
-                if (!user) {
-                    return;
-                }
-                res.writeHead(200);
-
-                //Get the recipe from the API
-                const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
-                await this.repo.reduceTokens(user.email);
-
-                //Write the response
-                res.write(JSON.stringify(recipe));
-                res.end();
+                this.getRecipe(req, res);
+            } else if (path === "/users") {
+                await this.getAllUsers(req, res);
             } else {
                 res.writeHead(404);
 
