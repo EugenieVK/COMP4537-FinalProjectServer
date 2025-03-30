@@ -458,10 +458,10 @@ class Server {
     }
 
     async getAllUsers(req, res) {
-        const user = this.authenticateJWT(req, res);
-        if (!user) {
-            return;
-        }
+        // const user = this.authenticateJWT(req, res);
+        // if (!user) {
+        //     return;
+        // }
         res.writeHead(200);
 
         const users = await this.repo.selectAllUsers();
@@ -470,10 +470,10 @@ class Server {
     }
 
     async getAPIStats(req, res) {
-        const user = this.authenticateJWT(req, res);
-        if (!user) {
-            return;
-        }
+        // const user = this.authenticateJWT(req, res);
+        // if (!user) {
+        //     return;
+        // }
         res.writeHead(200);
 
         const users = await this.repo.selectAPIStats();
@@ -482,16 +482,16 @@ class Server {
     }
 
     async getRecipe(req, res) {
-        // const user = this.authenticateJWT(req, res);
-        // if (!user) {
-        //     return;
-        // }
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
         const reqUrl = url.parse(req.url, true);
         res.writeHead(200);
 
         //Get the recipe from the API
         const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
-        // await this.repo.reduceTokens(user.userID);
+        await this.repo.reduceTokens(user.userID);
 
         //Write the response
         res.write(JSON.stringify(recipe));
