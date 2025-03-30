@@ -40,7 +40,8 @@ const databaseTableConst = `
                 PRIMARY KEY(id)
             );
         `;
-const reduceTokensQuery = "UPDATE users SET tokens = tokens - 1 WHERE userid = '%1';";
+const reduceTokensQuery = "UPDATE userAPIConsumption SET tokens = tokens - 1 WHERE userid = '%1';";
+const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests = httpRequests + 1 WHERE userid = '%1';"
 const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
 const consumptionInsertQuery = "INSERT INTO userAPIConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);"
 const selectUserQuery =  `
@@ -188,13 +189,13 @@ class Repository {
         try {
             const initalQuery = insertUserQuery.replace('%1', email).replace('%2', password);
             const insertUserResult = await this.runQuery(initalQuery);
-            console.log(insertUserResult);
+
             const followUpQuery = consumptionInsertQuery.replace('%1', insertUserResult.insertId);
             const insertConsumptionResult = await this.runQuery(followUpQuery);
-            console.log(insertConsumptionResult);
+
             return { success: true, result: [insertUserResult, insertConsumptionResult]};
         } catch (err) {
-            console.log(err);
+
             return { success: false, error: err };
         }
 
@@ -202,12 +203,25 @@ class Repository {
 
     /**
      * Asynchronous function to reduce tokens
-     * @param {*} email 
+     * @param {*} id 
      * @returns result of the query
      */
-    async reduceTokens(email) {
+    async reduceTokens(id) {
         try {
-            const query = reduceTokensQuery.replace('%1', email);
+            const query = reduceTokensQuery.replace('%1', id);
+            const result = await this.runQuery(query);
+            console.log(result);
+
+            return { success: true, result: result };
+        } catch (err) {
+            console.log(err);
+            return { success: false, error: err };
+        }
+    }
+
+    async incrementUserAPIConsumption(id){
+        try {
+            const query = incrementUserAPIConsumption.replace('%1', id);
             const result = await this.runQuery(query);
             console.log(result);
 
@@ -362,7 +376,8 @@ class Server {
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-        await this.repo.insertUser(email, hashedPassword);
+        const result = await this.repo.insertUser(email, hashedPassword);
+        console.log(result);
 
         // Create a JWT token
         const token = jwt.sign({ email }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
@@ -553,5 +568,5 @@ class Server {
  * Start the server
  */
 const recipeApi = new RecipeAPI(modelAPIUrl, modelAPIQueryEndpoint);
-const server = new Server(8080, dbHost, dbUser, dbPassword, database, dbPort, privateKey, publicKey, recipeApi);
+const server = new Server(8000, dbHost, dbUser, dbPassword, database, dbPort, privateKey, publicKey, recipeApi);
 server.startServer();
