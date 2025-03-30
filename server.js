@@ -191,7 +191,7 @@ class Repository {
             console.log(insertUserResult);
             const followUpQuery = consumptionInsertQuery.replace('%1', insertUserResult.insertId);
             const insertConsumptionResult = await this.runQuery(followUpQuery);
-            console.log(inserConsumptionResult);
+            console.log(insertConsumptionResult);
             return { success: true, result: [insertUserResult, insertConsumptionResult]};
         } catch (err) {
             console.log(err);
