@@ -470,6 +470,18 @@ class Server {
         res.end();
     }
 
+    async getAPIStats(req, res) {
+        // const user = this.authenticateJWT(req, res);
+        // if (!user) {
+        //     return;
+        // }
+        res.writeHead(200);
+
+        const users = await this.repo.selectAPIStats();
+        res.write(JSON.stringify(users));
+        res.end();
+    }
+
     async getRecipe(req, res){
         const user = this.authenticateJWT(req, res);
         if (!user) {
