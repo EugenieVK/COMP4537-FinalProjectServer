@@ -671,6 +671,7 @@ class Server {
             recipes[i].directions = recipes[i].directions.split(',');
         }
 
+        console.log(recipes);
         if (!recipes.success) {
             this.serverError(res);
             return;
