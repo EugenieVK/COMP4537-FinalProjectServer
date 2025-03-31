@@ -11,6 +11,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const http = require('http');
 const url = require('url');
+const fs = require('fs');
 const { parse } = require('cookie');
 
 // Salt rounds for hashing
@@ -472,6 +473,8 @@ class Server {
         this.sessionDuration = 2 * 60 * 60;
     }
 
+    
+
     /**
      * Asynchronous function to parse the body of a request
      * @param {*} req 
@@ -593,7 +596,7 @@ class Server {
 
         const {error, value} = schema.validate({email: email, password: password});
         if(error) {
-            res.writeHead(400);
+            res.writeHead(401);
             res.write(JSON.stringify({ message: messages.messages.InvalidEmailOrPassword }));
             res.end();
             return;
@@ -608,7 +611,7 @@ class Server {
 
 
         if (foundUsers.result.length !== 1 || !(await bcrypt.compare(password, foundUsers.result[0].password))) {
-            res.writeHead(401);
+            res.writeHead(400);
 
             res.write(JSON.stringify({ message: messages.messages.InvalidEmailOrPassword }));
             res.end();
@@ -1040,6 +1043,17 @@ class Server {
         await this.repo.incrementAPICalls(req.method, reqUrl.pathname);
     }
 
+    serveStaticFile(res, filePath, contentType) {
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+              this.serverError(res);
+              return;
+            }
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(data);
+        });
+    }
+
     /**
      * Asynchronous function to start the server
      */
@@ -1067,8 +1081,15 @@ class Server {
                     return;
                 }
 
-                res.setHeader(jsonContentType, jsonApplication); //returning json responses from server
-                this.handleRequest(req, res);
+                const reqUrl = url.parse(req.url, true);
+                if(reqUrl.pathname === '/doc'){
+                    const filePath = path.join(__dirname, 'swagger.html');
+                    serveStaticFile(res, filePath, 'text/html');
+                } else {
+                    res.setHeader(jsonContentType, jsonApplication); //returning json responses from server
+                    this.handleRequest(req, res);
+                }
+ 
 
             })
                 // Set the timeout to 0 to prevent the server from closing the connection

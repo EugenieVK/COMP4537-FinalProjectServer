@@ -1,0 +1,548 @@
+openapi: 3.0.0
+info:
+  title: Meal Mancer API
+  description: API for the Meal Mancer backend, including user authentication, recipe generation, and user favorites.
+  version: 1.0.0
+servers:
+  - url: https://meal-mancer-api-q3zh9.ondigitalocean.app
+
+paths:
+  /v1/login:
+    post:
+      summary: Login a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "user@example.com"
+                password:
+                  type: string
+                  example: "your_password"
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successful Login!"
+                  role:
+                    type: string
+                    example: gen
+                  tokens:
+                    type: integer
+                    example: 5
+                  httpRequests:
+                    type: integer
+                    example: 100
+                  expiresAt:
+                    type: string
+                    example: "2025-03-30T12:00:00Z"
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid email or password"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+
+  /v1/signup:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "newuser@example.com"
+                password:
+                  type: string
+                  example: "new_password"
+      responses:
+        '200':
+          description: Successful signup
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successful Login!"
+                  role:
+                    type: string
+                    example: "gen"
+                  tokens:
+                    type: integer
+                    example: 5
+                  httpRequests:
+                    type: integer
+                    example: 100
+                  expiresAt:
+                    type: string
+                    example: "2025-03-30T12:00:00Z"
+        '400':
+          description: Email already in use
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email already in use"
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid email or password"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+
+  /v1/logout:
+    post:
+      summary: Logout a user
+      responses:
+        '200':
+          description: Successful logout
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successful Logout!"
+
+  /v1/favourites:
+    post:
+      summary: Add a recipe to favorites
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipe:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                      example: "Spaghetti Carbonara"
+                    ingredients:
+                      type: array
+                      items:
+                        type: string
+                      example: ["Tomatoes", "Garlic", "Onion"]
+                    directions:
+                      type: array
+                      items:
+                        type: string
+                      example: ["Boil tomatoes", "Fry garlic", "Mix together"]
+      responses:
+        '200':
+          description: Recipe added to favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "New favourite recipe!"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access Denied: Invalid Token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+
+  /v1/favourites:
+    get:
+      summary: Get all favorite recipes
+      responses:
+        '200':
+          description: List of favorite recipes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                      example: "Spaghetti Carbonara"
+                    ingredients:
+                      type: array
+                      items:
+                        type: string
+                      example: ["Spaghetti", "Eggs", "Bacon"]
+                    directions:
+                      type: array
+                      items:
+                        type: string
+                      example: ["Boil water", "Fry bacon", "Mix with eggs"]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access Denied: Invalid Token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+  
+  /v1/favourites:
+    delete:
+      summary: Remove a recipe from favorites
+      parameters:
+        - name: recipe
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 12
+      responses:
+        '200':
+          description: Recipe removed from favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Recipe forgotten"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access Denied: Invalid Token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+
+  /v1/generate:
+    get:
+      summary: Generate a recipe based on ingredients
+      parameters:
+        - name: ingredients
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "onion, garlic, tomato"
+      responses:
+        '200':
+          description: Recipe generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title:
+                    type: string
+                    example: "Tomato Soup"
+                  ingredients:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Tomatoes", "Garlic", "Onion"]
+                  directions:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Boil tomatoes", "Fry garlic", "Mix together"]
+        '400':
+          description: Not enough tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You've run out of coins for the Meal Mancer!"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access Denied: Invalid Token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+
+  /v1/users:
+    get:
+      summary: List all users
+      responses:
+        '200':
+          description: Successful retrieval of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user_id:
+                      type: integer
+                      example: 12
+                    email:
+                      type: string
+                      example: "user@example.com"
+                    tokens:
+                      type: integer
+                      example: 5
+                    httpRequests:
+                      type: integer
+                      example: 100
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access Denied: Invalid Token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+
+  /v1/users:
+    put:
+      summary: Change user token count
+      parameters:
+        - name: user
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 12
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newTokens:
+                  type: integer
+                  example: 100
+      responses:
+        '200':
+          description: User tokens updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Updated user tokens!"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access Denied: Invalid Token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+
+  /v1/users:
+    delete:
+      summary: Delete a user
+      parameters:
+        - name: user
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 12
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User has been deleted!"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access Denied: Invalid Token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+
+  /v1/apiStats:
+    get:
+      summary: Get the status of API usage
+      responses:
+        '200':
+          description: API usage statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    method:
+                      type: string
+                      enum: [GET, POST, DELETE, PUT, PATCH]
+                      example: "GET"
+                    endpoint:
+                      type: string
+                      example: "/v1/users"
+                    requests:
+                      type: integer
+                      example: 100
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access Denied: Invalid Token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
+  
+  

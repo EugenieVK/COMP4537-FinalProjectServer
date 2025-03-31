@@ -26,7 +26,7 @@
 ```json
 {
   "message": "Successful Login!",
-  "role": "{admin | general}",
+  "role": "{admin | gen}",
   "tokens": "{number of tokens left}",
   "httpRequests": "{number of requests made}",
   "expiresAt": "{session expiration time}"
