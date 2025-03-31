@@ -1085,7 +1085,7 @@ class Server {
                 const reqUrl = url.parse(req.url, true);
                 if(reqUrl.pathname === '/doc'){
                     const filePath = 'swagger.html';
-                    serveStaticFile(res, filePath, 'text/html');
+                    this.serveStaticFile(res, filePath, 'text/html');
                 } else {
                     res.setHeader(jsonContentType, jsonApplication); //returning json responses from server
                     this.handleRequest(req, res);
