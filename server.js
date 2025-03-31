@@ -709,14 +709,14 @@ class Server {
             )
         }
 
-        console.log("RECIPES: " + recipes);
+        console.log("RECIPES: " + formattedRecipes);
         if (!recipes.success) {
             this.serverError(res);
             return;
         }
 
         res.writeHead(200);
-        res.write(JSON.stringify(recipes.result));
+        res.write(JSON.stringify(formattedRecipes));
         res.end();
 
         
