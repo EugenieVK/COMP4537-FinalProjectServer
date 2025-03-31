@@ -574,7 +574,7 @@ class Server {
             this.serverError(res);
             return;
         }
-        if (foundUsers.result.length !== 1 || !(await bcrypt.compare(password, foundUsers[0].password))) {
+        if (foundUsers.result.length !== 1 || !(await bcrypt.compare(password, foundUsers.result[0].password))) {
             res.writeHead(401);
 
             res.write(JSON.stringify({ message: messages.messages.InvalidLogin }));
@@ -583,7 +583,7 @@ class Server {
         }
 
         // Create a JWT token
-        const user = foundUsers[0];
+        const user = foundUsers.result[0];
         const token = jwt.sign({ email: email, userID: user.id, role: user.role }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
