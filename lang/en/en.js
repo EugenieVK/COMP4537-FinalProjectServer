@@ -3,7 +3,7 @@ exports.messages = {
     DBError: "An error occurred editing the database",
     Logout: "Successful Logout!",
     PageNotFound : "Page Not Found",
-    InvalidLogin: "Invalid email or password",
+    InvalidEmailOrPassword: "Invalid email or password",
     LoginSuccess: "Successful Login!",
     EmailUsed: "Email already in use",
     RegisterSuccess: "User Registered",
@@ -17,5 +17,6 @@ exports.messages = {
     RemovedFavourite: "Recipe forgotten",
     TokensUpdated: "Updated user tokens!",
     RemovedUser: "User has been deleted!",
-    ServerError: "Something went wrong!"
+    ServerError: "Something went wrong!",
+    InvalidRecipeInput: "Invalid input!"
 }

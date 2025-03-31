@@ -516,6 +516,19 @@ class Server {
         const email = info.email;
         const password = info.password;
 
+        const schema = joi.object({
+            email: joi.string().email().required(),
+            password: joi.string().pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/).required()
+        });
+
+        const {error, value} = schema.validate(info);
+        if(error) {
+            res.writeHead(400);
+            res.write(JSON.stringify({ message: messages.messages.InvalidEmailOrPassword }));
+            res.end();
+            return;
+        }
+
         // Check if the email is already in use
         const checkUser = await this.repo.selectUser(email);
         if (!checkUser.success) {
@@ -568,6 +581,19 @@ class Server {
         const email = info.email;
         const password = info.password;
 
+        const schema = joi.object({
+            email: joi.string().email().required(),
+            password: joi.string().pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/).required()
+        });
+
+        const {error, value} = schema.validate(info);
+        if(error) {
+            res.writeHead(400);
+            res.write(JSON.stringify({ message: messages.messages.InvalidEmailOrPassword }));
+            res.end();
+            return;
+        }
+
         // Check if the user exists
         const foundUsers = await this.repo.selectUser(email);
         if (!foundUsers.success) {
@@ -579,7 +605,7 @@ class Server {
         if (foundUsers.result.length !== 1 || !(await bcrypt.compare(password, foundUsers.result[0].password))) {
             res.writeHead(401);
 
-            res.write(JSON.stringify({ message: messages.messages.InvalidLogin }));
+            res.write(JSON.stringify({ message: messages.messages.InvalidEmailOrPassword }));
             res.end();
             return;
         }
@@ -671,7 +697,7 @@ class Server {
             recipes[i].directions = recipes[i].directions.split(',');
         }
 
-        console.log(recipes);
+        console.log("RECIPES: " + recipes);
         if (!recipes.success) {
             this.serverError(res);
             return;
@@ -807,8 +833,18 @@ class Server {
 
         const tokens = checkTokens.result.tokens;
         if (tokens > 0) {
-            const reqUrl = url.parse(req.url, true);
+            const schema = joi.object({
+                ingredients: joi.string().pattern(/^(?:[a-zA-Z\s]+(?:,\s*[a-zA-Z\s]+)*)?$/).required()
+            });
 
+            const reqUrl = url.parse(req.url, true);
+            const {error, value} = schema.validate(reqUrl.query.ingredients);
+            if(error) {
+                res.writeHead(400);
+                res.write(JSON.stringify({ message: messages.messages.InvalidRecipeInput }));
+                res.end();
+                return;
+            }
             //Get the recipe from the API
             const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
 
