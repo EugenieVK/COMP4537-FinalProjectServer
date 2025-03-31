@@ -226,7 +226,7 @@ class Repository {
         try {
             const query = deleteUser.replace('%1', id);
             const result = await this.runQuery(query);
-
+            console.log(result);
             return { success: true, result: result };
         } catch (err) {
 
