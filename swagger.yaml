@@ -209,8 +209,6 @@ paths:
                   message:
                     type: string
                     example: "Something went wrong!"
-
-  /v1/favourites:
     get:
       summary: Get all favorite recipes
       responses:
@@ -256,8 +254,6 @@ paths:
                   message:
                     type: string
                     example: "Something went wrong!"
-  
-  /v1/favourites:
     delete:
       summary: Remove a recipe from favorites
       parameters:
@@ -406,8 +402,6 @@ paths:
                   message:
                     type: string
                     example: "Something went wrong!"
-
-  /v1/users:
     put:
       summary: Change user token count
       parameters:
@@ -458,8 +452,6 @@ paths:
                   message:
                     type: string
                     example: "Something went wrong!"
-
-  /v1/users:
     delete:
       summary: Delete a user
       parameters:
@@ -544,5 +536,3 @@ paths:
                   message:
                     type: string
                     example: "Something went wrong!"
-  
-  
