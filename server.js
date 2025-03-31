@@ -1086,7 +1086,7 @@ class Server {
                 if(reqUrl.pathname === '/doc'){
                     const filePath = 'swagger.html';
                     this.serveStaticFile(res, filePath, 'text/html');
-                } else if (reqUrl.pathname === '/doc-yaml'){
+                } else if (reqUrl.pathname === '/swagger.yaml'){
                     const filePath = 'swagger.yaml';
                     this.serveStaticFile(res, filePath, 'text/plain');
                 } else {
