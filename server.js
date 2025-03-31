@@ -697,9 +697,16 @@ class Server {
         this.repo.incrementUserAPIConsumption(user.id);
 
         const recipes = await this.repo.selectUsersFavouriteRecipes(user.id);
+        let formattedRecipes = []
         for(let i = 0; i < recipes.length; i++){
-            recipes[i].ingredients = recipes[i].ingredients.split(',');
-            recipes[i].directions = recipes[i].directions.split(',');
+            formattedRecipes.push(
+                {
+                    recipeId: recipes[i].recipeId,
+                    title: recipes[i].title,
+                    ingredients: JSON.parse(recipes[i].ingredients),
+                    directions: JSON.parse(recipes[i].directions)
+                }
+            )
         }
 
         console.log("RECIPES: " + recipes);
