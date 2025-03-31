@@ -985,9 +985,9 @@ class Server {
             http.createServer((req, res) => {
 
                 //Allowing AJAX calls
-                res.setHeader("Access-Control-Allow-Origin", "https://mealmancer.netlify.app");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+                res.setHeader(corsOrigin, corsOriginValue);
+                res.setHeader(corsMethods, corsMethodsValue);
+                res.setHeader(corsHeaders, corsHeadersValue);
                 res.setHeader(corsCredentials, trueConst);
 
                 //Handles OPTIONS pre-flight requests from CORS
