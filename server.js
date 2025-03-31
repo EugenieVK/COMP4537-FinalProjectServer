@@ -991,8 +991,11 @@ class Server {
                 res.setHeader("Access-Control-Expose-Headers", "Content-Type, Authorization");
                 res.setHeader(corsCredentials, trueConst);
 
+                console.log("CORS PLACED");
+
                 //Handles OPTIONS pre-flight requests from CORS
                 if (req.method === optionsConst) {
+                    console.log("PRE_FLIGHT")
                     res.writeHead(204);
                     res.end();
                     return;
