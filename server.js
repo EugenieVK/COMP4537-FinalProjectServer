@@ -804,16 +804,17 @@ class Server {
 
             //Get the recipe from the API
             const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
-            const result = await this.repo.reduceTokens(user.id);
-            if (!result.success) {
-                this.serverError(res);
-                return;
-            }
 
             //Write the response
             res.writeHead(200);
             res.write(JSON.stringify(recipe));
             res.end();
+
+            const result = await this.repo.reduceTokens(user.id);
+            if (!result.success) {
+                this.serverError(res);
+                return;
+            }
         } else {
             res.writeHead(400);
             res.write(JSON.stringify({
