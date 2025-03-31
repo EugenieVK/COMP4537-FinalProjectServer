@@ -523,10 +523,10 @@ class Server {
 
         const schema = joi.object({
             email: joi.string().email().required(),
-            password: joi.string().pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/).required()
+            password: joi.string().required()
         });
 
-        const {error, value} = schema.validate(info);
+        const {error, value} = schema.validate({email: email, password: password});
         if(error) {
             res.writeHead(400);
             res.write(JSON.stringify({ message: messages.messages.InvalidEmailOrPassword }));
@@ -588,10 +588,10 @@ class Server {
 
         const schema = joi.object({
             email: joi.string().email().required(),
-            password: joi.string().pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/).required()
+            password: joi.string().required()
         });
 
-        const {error, value} = schema.validate(info);
+        const {error, value} = schema.validate({email: email, password: password});
         if(error) {
             res.writeHead(400);
             res.write(JSON.stringify({ message: messages.messages.InvalidEmailOrPassword }));
@@ -839,11 +839,11 @@ class Server {
         const tokens = checkTokens.result.tokens;
         if (tokens > 0) {
             const schema = joi.object({
-                ingredients: joi.string().pattern(/^(?:[a-zA-Z\s]+(?:,\s*[a-zA-Z\s]+)*)?$/).required()
+                ingredients: joi.string().pattern(/^[a-zA-Z\s,]+$/).required()
             });
 
             const reqUrl = url.parse(req.url, true);
-            const {error, value} = schema.validate(reqUrl.query.ingredients);
+            const {error, value} = schema.validate({ingredients: reqUrl.query.ingredients});
             if(error) {
                 res.writeHead(400);
                 res.write(JSON.stringify({ message: messages.messages.InvalidRecipeInput }));
