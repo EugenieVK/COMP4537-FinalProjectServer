@@ -700,23 +700,24 @@ class Server {
         this.repo.incrementUserAPIConsumption(user.id);
 
         const recipes = await this.repo.selectUsersFavouriteRecipes(user.id);
+        if (!recipes.success) {
+            this.serverError(res);
+            return;
+        }
         let formattedRecipes = []
         for(let i = 0; i < recipes.result.length; i++){
             formattedRecipes.push(
                 {
-                    recipeId: recipes[i].recipeId,
-                    title: recipes[i].title,
-                    ingredients: JSON.parse(recipes[i].ingredients),
-                    directions: JSON.parse(recipes[i].directions)
+                    recipeId: recipes.result[i].recipeId,
+                    title: recipes.result[i].title,
+                    ingredients: JSON.parse(recipes.result[i].ingredients),
+                    directions: JSON.parse(recipes.result[i].directions)
                 }
             )
         }
 
         console.log("RECIPES: " + formattedRecipes);
-        if (!recipes.success) {
-            this.serverError(res);
-            return;
-        }
+
 
         res.writeHead(200);
         res.write(JSON.stringify(formattedRecipes));
