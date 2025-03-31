@@ -698,7 +698,7 @@ class Server {
 
         const recipes = await this.repo.selectUsersFavouriteRecipes(user.id);
         let formattedRecipes = []
-        for(let i = 0; i < recipes.length; i++){
+        for(let i = 0; i < recipes.result.length; i++){
             formattedRecipes.push(
                 {
                     recipeId: recipes[i].recipeId,
