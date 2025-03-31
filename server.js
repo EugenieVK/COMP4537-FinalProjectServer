@@ -673,7 +673,7 @@ class Server {
         }
 
         res.writeHead(200);
-        res.write(JSON.stringify(recipes));
+        res.write(JSON.stringify(recipes.result));
         res.end();
 
         
