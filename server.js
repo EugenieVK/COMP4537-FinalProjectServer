@@ -258,7 +258,7 @@ class Repository {
             const result = await this.runQuery(query);
             console.log(result);
 
-            return { success: true, result: result.tokens };
+            return { success: true, result: result[0] };
         } catch (err) {
             console.log(err);
             return { success: false, error: err };
@@ -793,8 +793,7 @@ class Server {
         }
         this.repo.incrementUserAPIConsumption(user.id);
         const checkTokens = await this.repo.getUserTokens(user.id);
-        console.log(checkTokens);
-        console.log(checkTokens.result);
+
         if (!checkTokens.success) {
             this.serverError(res);
             return;
