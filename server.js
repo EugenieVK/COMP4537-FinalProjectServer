@@ -798,7 +798,7 @@ class Server {
             return;
         }
 
-        const tokens = checkTokens.result[0].tokens;
+        const tokens = checkTokens.result.tokens;
         if (tokens > 0) {
             const reqUrl = url.parse(req.url, true);
 
