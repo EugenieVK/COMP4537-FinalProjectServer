@@ -988,6 +988,7 @@ class Server {
                 res.setHeader(corsOrigin, corsOriginValue);
                 res.setHeader(corsMethods, corsMethodsValue);
                 res.setHeader(corsHeaders, corsHeadersValue);
+                res.setHeader("Access-Control-Expose-Headers", "Content-Type, Authorization");
                 res.setHeader(corsCredentials, trueConst);
 
                 //Handles OPTIONS pre-flight requests from CORS
