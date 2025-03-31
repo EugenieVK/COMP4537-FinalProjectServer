@@ -738,6 +738,7 @@ class Server {
             const reqUrl = url.parse(req.url, true);
             const id = reqUrl.query.user;
             const result = await this.repo.deleteUser(id);
+            console.log(result);
             if (!result.success) {
                 this.serverError(res);
                 return;
