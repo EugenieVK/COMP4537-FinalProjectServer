@@ -64,11 +64,11 @@ const selectAPIStats = "SELECT method, endpoint, requests FROM apiCalls;";
 const insertNewFavouriteRecipe = "INSERT INTO favourites (userID, title, ingredients, directions) VALUES (%1, '%2', '%3', '%4');";
 const selectFavouriteRecipes = "SELECT id AS recipeId, title, ingredients, directions FROM favourites WHERE userID = '%1';";
 const deleteFavouriteRecipe = "DELETE FROM favourites WHERE id = '%1';";
-const deleteUser = "DELETE FROM users WHERE email = '%1';";
+const deleteUser = "DELETE FROM users WHERE id = '%1';";
 
-const selectApiCall = "SELECT * FROM apiCalls WHERE method = '%1' AND endpoints = '%2';";
-const insertApiCall = "INSERT INTO apiCalls (method, endpoints, requests) VALUES ('%1', '%2', 1);";
-const updateApiCall = "UPDATE apiCalls SET requests = request + 1 WHERE method = '%1' AND endpoints = '%2';";
+const selectApiCall = "SELECT * FROM apiCalls WHERE method = '%1' AND endpoint = '%2';";
+const insertApiCall = "INSERT INTO apiCalls (method, endpoint, requests) VALUES ('%1', '%2', 1);";
+const updateApiCall = "UPDATE apiCalls SET requests = request + 1 WHERE method = '%1' AND endpoint = '%2';";
 
 // JSON constants
 const jsonGet = "GET";
@@ -222,9 +222,9 @@ class Repository {
         }
     }
 
-    async deleteUser(email) {
+    async deleteUser(id) {
         try {
-            const query = deleteUser.replace('%1', email);
+            const query = deleteUser.replace('%1', id);
             const result = await this.runQuery(query);
 
             return { success: true, result: result };
@@ -584,7 +584,7 @@ class Server {
 
         // Create a JWT token
         const user = foundUsers.result[0];
-        const token = jwt.sign({ email: email, userID: user.id, role: user.role }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email: email, userID: user.user_id, role: user.role }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
         // Set the cookie
@@ -600,7 +600,7 @@ class Server {
         }));
         res.end();
 
-        await this.repo.incrementUserAPIConsumption(user.id);
+        await this.repo.incrementUserAPIConsumption(user.user_id);
     }
 
     async getAllUsers(req, res) {
