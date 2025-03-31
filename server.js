@@ -540,7 +540,7 @@ class Server {
         }
 
         // Create a JWT token
-        const token = jwt.sign({ email: email, userID: insertResult.result.insertId, role: userRoleConst }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email: email, id: insertResult.result.insertId, role: userRoleConst }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
         // Set the cookie
@@ -586,8 +586,10 @@ class Server {
 
         // Create a JWT token
         const user = foundUsers.result[0];
-        const token = jwt.sign({ email: email, userID: user.user_id, role: user.role }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email: email, id: user.user_id, role: user.role }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
+
+        this.repo.incrementUserAPIConsumption(user.user_id);
 
         // Set the cookie
         res.setHeader(setCookie, cookieTemplate(token, this.sessionDuration)); // 7200 = 2 hours
@@ -602,7 +604,7 @@ class Server {
         }));
         res.end();
 
-        await this.repo.incrementUserAPIConsumption(user.user_id);
+        
     }
 
     async getAllUsers(req, res) {
@@ -610,6 +612,7 @@ class Server {
         if (!user) {
             return;
         }
+        this.repo.incrementUserAPIConsumption(user.id);
 
         if (user.role === 'admin') {
 
@@ -626,8 +629,6 @@ class Server {
         } else {
             this.unauthorizedPage(res);
         }
-
-        await this.repo.incrementUserAPIConsumption(user.userID);
     }
 
     async getAPIStats(req, res) {
@@ -635,6 +636,7 @@ class Server {
         if (!user) {
             return;
         }
+        this.repo.incrementUserAPIConsumption(user.id);
 
         if (user.role === 'admin') {
 
@@ -652,7 +654,7 @@ class Server {
             this.unauthorizedPage(res);
         }
 
-        await this.repo.incrementUserAPIConsumption(user.userID);
+        
 
     }
 
@@ -661,8 +663,9 @@ class Server {
         if (!user) {
             return;
         }
+        this.repo.incrementUserAPIConsumption(user.id);
 
-        const recipes = await this.repo.selectFavouriteRecipes();
+        const recipes = await this.repo.selectUsersFavouriteRecipes(user.id);
         if (!recipes.success) {
             this.serverError(res);
             return;
@@ -672,7 +675,7 @@ class Server {
         res.write(JSON.stringify(recipes));
         res.end();
 
-        await this.repo.incrementUserAPIConsumption(user.userID);
+        
     }
 
     async addFavourite(req, res) {
@@ -680,9 +683,10 @@ class Server {
         if (!user) {
             return;
         }
+        this.repo.incrementUserAPIConsumption(user.id);
 
         const info = await this.parseBody(req);
-        const result = await this.repo.insertFavouriteRecipe(user.userID, info.recipe);
+        const result = await this.repo.insertFavouriteRecipe(user.id, info.recipe);
         if (!result.success) {
             this.serverError(res);
             return;
@@ -694,7 +698,7 @@ class Server {
         }));
         res.end();
 
-        await this.repo.incrementUserAPIConsumption(user.userID);
+        
     }
 
     async deleteFavourites(req, res) {
@@ -702,7 +706,7 @@ class Server {
         if (!user) {
             return;
         }
-
+        this.repo.incrementUserAPIConsumption(user.id);
 
         const reqUrl = url.parse(req.url, true);
         const id = reqUrl.query.recipe;
@@ -718,8 +722,6 @@ class Server {
             message: messages.messages.RemovedFavourite
         }));
         res.end();
-
-        await this.repo.incrementUserAPIConsumption(user.userID);
     }
 
     async deleteUser(req, res) {
@@ -727,6 +729,7 @@ class Server {
         if (!user) {
             return;
         }
+        this.repo.incrementUserAPIConsumption(user.id);
 
         if (user.role === 'admin') {
 
@@ -748,7 +751,7 @@ class Server {
             this.unauthorizedPage(res);
         }
 
-        await this.repo.incrementUserAPIConsumption(user.userID);
+        
     }
 
     async changeTokenCount(req, res) {
@@ -756,6 +759,7 @@ class Server {
         if (!user) {
             return;
         }
+        this.repo.incrementUserAPIConsumption(user.id);
 
         const reqUrl = url.parse(req.url, true);
         const id = reqUrl.query.user;
@@ -778,7 +782,7 @@ class Server {
             this.unauthorizedPage(res);
         }
 
-        await this.repo.incrementUserAPIConsumption(user.userID);
+        
     }
 
     async getRecipe(req, res) {
@@ -786,13 +790,14 @@ class Server {
         if (!user) {
             return;
         }
-        const tokens = await this.repo.getUserTokens(user.userID);
+        this.repo.incrementUserAPIConsumption(user.id);
+        const tokens = await this.repo.getUserTokens(user.id);
         if (tokens > 0) {
             const reqUrl = url.parse(req.url, true);
 
             //Get the recipe from the API
             const recipe = await this.api.getRecipe(reqUrl.query.ingredients);
-            const result = await this.repo.reduceTokens(user.userID);
+            const result = await this.repo.reduceTokens(user.id);
             if (!result.success) {
                 this.serverError(res);
                 return;
@@ -810,7 +815,7 @@ class Server {
             res.end();
         }
 
-        await this.repo.incrementUserAPIConsumption(user.userID);
+        
     }
 
     /**
