@@ -793,6 +793,8 @@ class Server {
         }
         this.repo.incrementUserAPIConsumption(user.id);
         const checkTokens = await this.repo.getUserTokens(user.id);
+        console.log(checkTokens);
+        console.log(checkTokens.result);
         if (!checkTokens.success) {
             this.serverError(res);
             return;
@@ -1003,8 +1005,6 @@ class Server {
                 res.setHeader(corsHeaders, corsHeadersValue);
                 res.setHeader("Access-Control-Expose-Headers", "Content-Type, Authorization");
                 res.setHeader(corsCredentials, trueConst);
-
-                console.log("CORS PLACED");
 
                 //Handles OPTIONS pre-flight requests from CORS
                 if (req.method === optionsConst) {
