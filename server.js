@@ -40,8 +40,8 @@ const databaseTableConst = `
                 PRIMARY KEY(id)
             );
         `;
-const reduceTokensQuery = "UPDATE userAPIConsumption SET tokens = tokens - 1 WHERE userid = '%1';";
-const selectTokensQuery = "SELECT tokens FROM userAPIConsumption WHERE userid = '%1';";
+const reduceTokensQuery = "UPDATE userAPIConsumption SET tokens = tokens - 1 WHERE userid = %1;";
+const selectTokensQuery = "SELECT tokens FROM userAPIConsumption WHERE userid = %1;";
 const changeTokenCountQuery = "UPDATE userAPIConsumption SET tokens = '%1' WHERE userid = '%2';";
 const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests = httpRequests + 1 WHERE userid = '%1';";
 const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
@@ -68,7 +68,7 @@ const deleteUser = "DELETE FROM users WHERE id = '%1';";
 
 const selectApiCall = "SELECT * FROM apiCalls WHERE method = '%1' AND endpoint = '%2';";
 const insertApiCall = "INSERT INTO apiCalls (method, endpoint, requests) VALUES ('%1', '%2', 1);";
-const updateApiCall = "UPDATE apiCalls SET requests = request + 1 WHERE method = '%1' AND endpoint = '%2';";
+const updateApiCall = "UPDATE apiCalls SET requests = requests + 1 WHERE method = '%1' AND endpoint = '%2';";
 
 // JSON constants
 const jsonGet = "GET";
@@ -574,6 +574,8 @@ class Server {
             this.serverError(res);
             return;
         }
+
+
         if (foundUsers.result.length !== 1 || !(await bcrypt.compare(password, foundUsers.result[0].password))) {
             res.writeHead(401);
 
@@ -659,8 +661,6 @@ class Server {
         if (!user) {
             return;
         }
-
-
 
         const recipes = await this.repo.selectFavouriteRecipes();
         if (!recipes.success) {
@@ -786,7 +786,7 @@ class Server {
         if (!user) {
             return;
         }
-        const tokens = await this.repo.getUserTokens();
+        const tokens = await this.repo.getUserTokens(user.userID);
         if (tokens > 0) {
             const reqUrl = url.parse(req.url, true);
 
