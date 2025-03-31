@@ -1086,6 +1086,9 @@ class Server {
                 if(reqUrl.pathname === '/doc'){
                     const filePath = 'swagger.html';
                     this.serveStaticFile(res, filePath, 'text/html');
+                } else if (reqUrl.pathname === '/doc-yaml'){
+                    const filePath = 'swagger.yaml';
+                    this.serveStaticFile(res, filePath, 'text/plain');
                 } else {
                     res.setHeader(jsonContentType, jsonApplication); //returning json responses from server
                     this.handleRequest(req, res);
