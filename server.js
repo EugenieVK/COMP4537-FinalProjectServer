@@ -663,6 +663,7 @@ class Server {
         if (!user) {
             return;
         }
+        console.log("BEFORE INCREMENT: "  + user.id);
         this.repo.incrementUserAPIConsumption(user.id);
 
         const recipes = await this.repo.selectUsersFavouriteRecipes(user.id);
