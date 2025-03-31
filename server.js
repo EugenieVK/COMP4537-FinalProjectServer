@@ -40,10 +40,10 @@ const databaseTableConst = `
                 PRIMARY KEY(id)
             );
         `;
-const reduceTokensQuery = "UPDATE userAPIConsumption SET tokens = tokens - 1 WHERE userid = %1;";
-const selectTokensQuery = "SELECT tokens FROM userAPIConsumption WHERE userid = %1;";
-const changeTokenCountQuery = "UPDATE userAPIConsumption SET tokens = '%1' WHERE userid = '%2';";
-const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests = httpRequests + 1 WHERE userid = '%1';";
+const reduceTokensQuery = "UPDATE userAPIConsumption SET tokens = tokens - 1 WHERE userID = %1;";
+const selectTokensQuery = "SELECT tokens FROM userAPIConsumption WHERE userID = %1;";
+const changeTokenCountQuery = "UPDATE userAPIConsumption SET tokens = '%1' WHERE userID = '%2';";
+const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests = httpRequests + 1 WHERE userID = '%1';";
 const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
 const consumptionInsertQuery = "INSERT INTO userAPIConsumption (userID, tokens, httpRequests) VALUES (%1, 20, 0);";
 const selectUserQuery = `
@@ -792,7 +792,13 @@ class Server {
             return;
         }
         this.repo.incrementUserAPIConsumption(user.id);
-        const tokens = await this.repo.getUserTokens(user.id);
+        const checkTokens = await this.repo.getUserTokens(user.id);
+        if (!checkTokens.success) {
+            this.serverError(res);
+            return;
+        }
+
+        const tokens = checkTokens.result[0].tokens;
         if (tokens > 0) {
             const reqUrl = url.parse(req.url, true);
 
