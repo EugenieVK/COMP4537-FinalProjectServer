@@ -1,3 +1,8 @@
+/*
+    ChatGPT was used for debugging and as a search tool when 
+    fixing database errors
+*/
+
 // Node module imports
 const joi = require('joi');
 const messages = require("./lang/en/en");
@@ -296,8 +301,8 @@ class Repository {
         try {
             const query = insertNewFavouriteRecipe.replace('%1', id)
                 .replace('%2', recipe.title)
-                .replace('%3', recipe.ingredients)
-                .replace('%4', recipe.directions);
+                .replace('%3', JSON.stringify(recipe.ingredients))
+                .replace('%4', JSON.stringify(recipe.directions));
             const result = await this.runQuery(query);
             console.log(result);
 
