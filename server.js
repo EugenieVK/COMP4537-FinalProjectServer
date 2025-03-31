@@ -663,10 +663,14 @@ class Server {
         if (!user) {
             return;
         }
-        console.log("BEFORE INCREMENT: "  + user.id);
         this.repo.incrementUserAPIConsumption(user.id);
 
         const recipes = await this.repo.selectUsersFavouriteRecipes(user.id);
+        for(let i = 0; i < recipes.length; i++){
+            recipes[i].ingredients = recipes[i].ingredients.split(',');
+            recipes[i].directions = recipes[i].directions.split(',');
+        }
+
         if (!recipes.success) {
             this.serverError(res);
             return;
