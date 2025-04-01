@@ -560,6 +560,8 @@ class Server {
             return;
         }
 
+        console.log(insertResult.result);
+
         // Create a JWT token
         const token = jwt.sign({ email: email, id: insertResult.result.insertId, role: userRoleConst }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
