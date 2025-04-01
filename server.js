@@ -559,11 +559,9 @@ class Server {
             this.serverError(res);
             return;
         }
-
-        console.log(insertResult.result);
-
+        
         // Create a JWT token
-        const token = jwt.sign({ email: email, id: insertResult.result.insertId, role: userRoleConst }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
+        const token = jwt.sign({ email: email, id: insertResult.result[0].insertId, role: userRoleConst }, this.privateKey, { algorithm: algorithmConst, expiresIn: this.sessionDuration });
         const expiresAt = new Date(Date.now() + this.sessionDuration * 1000);
 
         // Set the cookie
