@@ -324,6 +324,41 @@
 }
 ```
 
+### User API Usage
+
+**Endpoint**: `/v1/userConsumption`
+
+**Content-Type**: `None`
+
+**Body**: `None`
+
+**Response**: `JSON`
+
+- **200** Ok
+```json
+
+{
+  "tokens" : "{numebr of tokens}",
+  "httpRequests" : "{number of httpRequests}"
+}
+
+```
+
+- **401** Unauthorized
+```json
+{
+  "message": "Access Denied: Invalid Token"
+}
+```
+
+- **500** Server Error
+```json
+{
+  "message": "Something went wrong!"
+}
+```
+
+
 ---
 
 ## PUT

@@ -47,7 +47,7 @@ const databaseTableConst = `
             );
         `;
 const reduceTokensQuery = "UPDATE userAPIConsumption SET tokens = tokens - 1 WHERE userID = %1;";
-const selectTokensQuery = "SELECT tokens FROM userAPIConsumption WHERE userID = %1;";
+const selectTokensQuery = "SELECT tokens, httpRequests FROM userAPIConsumption WHERE userID = %1;";
 const changeTokenCountQuery = "UPDATE userAPIConsumption SET tokens = '%1' WHERE userID = '%2';";
 const incrementUserAPIConsumption = "UPDATE userAPIConsumption SET httpRequests = httpRequests + 1 WHERE userID = '%1';";
 const insertUserQuery = "INSERT INTO users (email, password, role) VALUES ('%1', '%2', 'gen');";
@@ -258,7 +258,7 @@ class Repository {
         }
     }
 
-    async getUserTokens(id) {
+    async selectUserConsumption(id) {
         try {
             const query = selectTokensQuery.replace('%1', id);
             const result = await this.runQuery(query);
@@ -829,9 +829,25 @@ class Server {
             res.end();
         } else {
             this.unauthorizedPage(res);
-        }
+        }        
+    }
 
-        
+    async getUserConsumption(req, res){
+        const user = this.authenticateJWT(req, res);
+        if (!user) {
+            return;
+        }
+        this.repo.incrementUserAPIConsumption(user.id);
+            const result = await this.repo.deleteUser(user.id);
+            console.log(result);
+            if (!result.success) {
+                this.serverError(res);
+                return;
+            }
+
+        res.writeHead(200);
+        res.write(JSON.stringify(result.result));
+        res.end();
     }
 
     async getRecipe(req, res) {
@@ -840,7 +856,7 @@ class Server {
             return;
         }
         this.repo.incrementUserAPIConsumption(user.id);
-        const checkTokens = await this.repo.getUserTokens(user.id);
+        const checkTokens = await this.repo.selectUserConsumption(user.id);
 
         if (!checkTokens.success) {
             this.serverError(res);
@@ -951,6 +967,9 @@ class Server {
                 break;
             case "favourites":
                 await this.getFavourites(req, res);
+                break;
+            case "apiConsumption":
+                await this.getUserConsumption(req, res);
                 break;
             default:
                 this.pageNotFoundResponse(res);

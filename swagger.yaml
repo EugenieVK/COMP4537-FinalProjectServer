@@ -536,3 +536,41 @@ paths:
                   message:
                     type: string
                     example: "Something went wrong!"
+
+  /v1/userConsumption:
+    get:
+      summary: Gets the users token and httpRequests 
+      responses:
+        '200':
+          description: User's API usage retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: integer
+                    example: 12
+                  httpRequests:
+                    type: integer
+                    example: 102
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access Denied: Invalid Token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Something went wrong!"
