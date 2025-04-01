@@ -968,7 +968,7 @@ class Server {
             case "favourites":
                 await this.getFavourites(req, res);
                 break;
-            case "apiConsumption":
+            case "userConsumption":
                 await this.getUserConsumption(req, res);
                 break;
             default:
