@@ -340,16 +340,16 @@ class Repository {
         }
     }
 
-    async incrementAPICalls(method, endpoint){
+    async incrementAPICalls(method, endpoint) {
         try {
             const check = await this.selectApiCall(method, endpoint);
-            if(!check.success) {
+            if (!check.success) {
                 return check;
             }
 
-            if(check.result.length > 0){
+            if (check.result.length > 0) {
                 const query = updateApiCall.replace('%1', method)
-                            .replace('%2', endpoint);
+                    .replace('%2', endpoint);
                 const result = await this.runQuery(query);
                 console.log(result);
 
@@ -367,7 +367,7 @@ class Repository {
     async insertApiCalls(method, endpoint) {
         try {
             const query = insertApiCall.replace('%1', method)
-                            .replace('%2', endpoint);
+                .replace('%2', endpoint);
             const result = await this.runQuery(query);
             console.log(result);
 
@@ -381,7 +381,7 @@ class Repository {
     async selectApiCall(method, endpoint) {
         try {
             const query = selectApiCall.replace('%1', method)
-                            .replace('%2', endpoint);
+                .replace('%2', endpoint);
             const result = await this.runQuery(query);
             console.log(result);
 
@@ -473,7 +473,7 @@ class Server {
         this.sessionDuration = 2 * 60 * 60;
     }
 
-    
+
 
     /**
      * Asynchronous function to parse the body of a request
@@ -529,8 +529,8 @@ class Server {
             password: joi.string().required()
         });
 
-        const {error, value} = schema.validate({email: email, password: password});
-        if(error) {
+        const { error, value } = schema.validate({ email: email, password: password });
+        if (error) {
             res.writeHead(400);
             res.write(JSON.stringify({ message: messages.messages.InvalidEmailOrPassword }));
             res.end();
@@ -594,8 +594,8 @@ class Server {
             password: joi.string().required()
         });
 
-        const {error, value} = schema.validate({email: email, password: password});
-        if(error) {
+        const { error, value } = schema.validate({ email: email, password: password });
+        if (error) {
             res.writeHead(401);
             res.write(JSON.stringify({ message: messages.messages.InvalidEmailOrPassword }));
             res.end();
@@ -638,7 +638,7 @@ class Server {
         }));
         res.end();
 
-        
+
     }
 
     async getAllUsers(req, res) {
@@ -688,7 +688,7 @@ class Server {
             this.unauthorizedPage(res);
         }
 
-        
+
 
     }
 
@@ -705,7 +705,7 @@ class Server {
             return;
         }
         let formattedRecipes = []
-        for(let i = 0; i < recipes.result.length; i++){
+        for (let i = 0; i < recipes.result.length; i++) {
             formattedRecipes.push(
                 {
                     recipeId: recipes.result[i].recipeId,
@@ -723,7 +723,7 @@ class Server {
         res.write(JSON.stringify(formattedRecipes));
         res.end();
 
-        
+
     }
 
     async addFavourite(req, res) {
@@ -746,7 +746,7 @@ class Server {
         }));
         res.end();
 
-        
+
     }
 
     async deleteFavourites(req, res) {
@@ -764,7 +764,7 @@ class Server {
             return;
         }
 
-        
+
         res.writeHead(200);
         res.write(JSON.stringify({
             message: messages.messages.RemovedFavourite
@@ -800,7 +800,7 @@ class Server {
             this.unauthorizedPage(res);
         }
 
-        
+
     }
 
     async changeTokenCount(req, res) {
@@ -829,21 +829,21 @@ class Server {
             res.end();
         } else {
             this.unauthorizedPage(res);
-        }        
+        }
     }
 
-    async getUserConsumption(req, res){
+    async getUserConsumption(req, res) {
         const user = this.authenticateJWT(req, res);
         if (!user) {
             return;
         }
         this.repo.incrementUserAPIConsumption(user.id);
-            const result = await this.repo.deleteUser(user.id);
-            console.log(result);
-            if (!result.success) {
-                this.serverError(res);
-                return;
-            }
+        const result = await this.repo.selectUserConsumption(user.id);
+        console.log(result);
+        if (!result.success) {
+            this.serverError(res);
+            return;
+        }
 
         res.writeHead(200);
         res.write(JSON.stringify(result.result));
@@ -870,8 +870,8 @@ class Server {
             });
 
             const reqUrl = url.parse(req.url, true);
-            const {error, value} = schema.validate({ingredients: reqUrl.query.ingredients});
-            if(error) {
+            const { error, value } = schema.validate({ ingredients: reqUrl.query.ingredients });
+            if (error) {
                 res.writeHead(400);
                 res.write(JSON.stringify({ message: messages.messages.InvalidRecipeInput }));
                 res.end();
@@ -898,7 +898,7 @@ class Server {
             res.end();
         }
 
-        
+
     }
 
     /**
@@ -1066,8 +1066,8 @@ class Server {
     serveStaticFile(res, filePath, contentType) {
         fs.readFile(filePath, (err, data) => {
             if (err) {
-              this.serverError(res);
-              return;
+                this.serverError(res);
+                return;
             }
             res.writeHead(200, { 'Content-Type': contentType });
             res.end(data);
@@ -1102,17 +1102,17 @@ class Server {
                 }
 
                 const reqUrl = url.parse(req.url, true);
-                if(reqUrl.pathname === '/doc'){
+                if (reqUrl.pathname === '/doc') {
                     const filePath = 'swagger.html';
                     this.serveStaticFile(res, filePath, 'text/html');
-                } else if (reqUrl.pathname === '/swagger.yaml'){
+                } else if (reqUrl.pathname === '/swagger.yaml') {
                     const filePath = 'swagger.yaml';
                     this.serveStaticFile(res, filePath, 'text/plain');
                 } else {
                     res.setHeader(jsonContentType, jsonApplication); //returning json responses from server
                     this.handleRequest(req, res);
                 }
- 
+
 
             })
                 // Set the timeout to 0 to prevent the server from closing the connection
