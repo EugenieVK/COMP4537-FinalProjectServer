@@ -13,6 +13,7 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const { parse } = require('cookie');
+const { json } = require('stream/consumers');
 
 // Salt rounds for hashing
 const saltRounds = 10;
@@ -79,7 +80,8 @@ const updateApiCall = "UPDATE apiCalls SET requests = requests + 1 WHERE method 
 // JSON constants
 const jsonGet = "GET";
 const jsonPost = "POST";
-const testConst = "TEST";
+const jsonPut = "PUT";
+const jsonDelete = "DELETE";
 const jsonContentType = "Content-Type";
 const jsonApplication = "application/json";
 const dataConst = "data";
@@ -90,6 +92,18 @@ const signupPath = "signup";
 const loginPath = "login";
 const logoutPath = "logout";
 const generatePath = "generate";
+const usersPath = "users";
+const apiStatsPath = "apiStats";
+const favouritesPath = "favourites";
+const userConsumptionPath = "userConsumption";
+const v1Path = "v1";
+const docConst = '/doc';
+const swaggerHTMLPath = 'swagger.html';
+const swaggerYMLPathSlash = '/swagger.yaml';
+const swaggerYMLPath = 'swagger.yaml';
+const textHTMLConst = 'text/html';
+const textPlainConst = 'text/plain';
+const portConst = "{port}";
 
 // Cookie constants
 const setCookie = "Set-Cookie";
@@ -101,6 +115,7 @@ const algorithmConst = "RS256";
 
 // User constants
 const userRoleConst = "gen";
+const adminConst = "admin";
 
 // CORS constants
 const optionsConst = "OPTIONS";
@@ -108,6 +123,7 @@ const corsOrigin = "Access-Control-Allow-Origin";
 const corsMethods = "Access-Control-Allow-Methods";
 const corsHeaders = "Access-Control-Allow-Headers";
 const corsCredentials = "Access-Control-Allow-Credentials";
+const corsExposeHeaders = "Access-Control-Expose-Headers";
 const trueConst = "true";
 const corsOriginValue = "https://mealmancer.netlify.app";
 const corsMethodsValue = "POST, GET, OPTIONS, PUT, DELETE";
@@ -185,6 +201,10 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to select all users
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async selectAllUsers() {
         try {
             const result = await this.runQuery(selectAllUsersQuery);
@@ -196,6 +216,10 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to select API stats
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async selectAPIStats() {
         try {
             const result = await this.runQuery(selectAPIStats);
@@ -228,6 +252,11 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to create the user table
+     * @param {*} id 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async deleteUser(id) {
         try {
             const query = deleteUser.replace('%1', id);
@@ -258,6 +287,11 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to select user consumption of API tokens
+     * @param {*} id 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async selectUserConsumption(id) {
         try {
             const query = selectTokensQuery.replace('%1', id);
@@ -271,6 +305,12 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to change the token count for a user
+     * @param {*} id 
+     * @param {*} newTokens 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async changeTokens(id, newTokens) {
         try {
             const query = changeTokenCountQuery.replace('%1', newTokens)
@@ -285,6 +325,11 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to increment the user API consumption
+     * @param {*} id 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async incrementUserAPIConsumption(id) {
         try {
             const query = incrementUserAPIConsumption.replace('%1', id);
@@ -298,6 +343,13 @@ class Repository {
         }
     }
 
+
+    /**
+     * Asynchronous function to insert a new favourite recipe
+     * @param {*} id 
+     * @param {*} recipe 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async insertFavouriteRecipe(id, recipe) {
         try {
             const query = insertNewFavouriteRecipe.replace('%1', id)
@@ -314,6 +366,11 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to select a user's favourite recipes
+     * @param {*} id 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async selectUsersFavouriteRecipes(id) {
         try {
             const query = selectFavouriteRecipes.replace('%1', id);
@@ -327,6 +384,11 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to delete a favourite recipe
+     * @param {*} id 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async deleteFavourite(id) {
         try {
             const query = deleteFavouriteRecipe.replace('%1', id);
@@ -340,6 +402,12 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to increment API calls
+     * @param {*} method 
+     * @param {*} endpoint 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async incrementAPICalls(method, endpoint) {
         try {
             const check = await this.selectApiCall(method, endpoint);
@@ -347,6 +415,7 @@ class Repository {
                 return check;
             }
 
+            // If the API call already exists, update the count
             if (check.result.length > 0) {
                 const query = updateApiCall.replace('%1', method)
                     .replace('%2', endpoint);
@@ -364,6 +433,12 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to insert API calls
+     * @param {*} method 
+     * @param {*} endpoint 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async insertApiCalls(method, endpoint) {
         try {
             const query = insertApiCall.replace('%1', method)
@@ -378,6 +453,12 @@ class Repository {
         }
     }
 
+    /**
+     * Asynchronous function to select API calls
+     * @param {*} method 
+     * @param {*} endpoint 
+     * @returns { success: true, result: result } or { success: false, error: err }
+     */
     async selectApiCall(method, endpoint) {
         try {
             const query = selectApiCall.replace('%1', method)
@@ -472,8 +553,6 @@ class Server {
 
         this.sessionDuration = 2 * 60 * 60;
     }
-
-
 
     /**
      * Asynchronous function to parse the body of a request
@@ -641,14 +720,22 @@ class Server {
 
     }
 
+    /**
+     * Asynchronous function to get all users
+     * @param {*} req 
+     * @param {*} res
+     */
     async getAllUsers(req, res) {
+        // Get the user from the JWT token
         const user = this.authenticateJWT(req, res);
         if (!user) {
             return;
         }
+        // Increment the user API consumption
         this.repo.incrementUserAPIConsumption(user.id);
 
-        if (user.role === 'admin') {
+        // Check if the user is an admin
+        if (user.role === adminConst) {
 
 
             const users = await this.repo.selectAllUsers();
@@ -665,6 +752,11 @@ class Server {
         }
     }
 
+    /**
+     * Asynchronous function to get API stats
+     * @param {*} req 
+     * @param {*} res 
+     */
     async getAPIStats(req, res) {
         const user = this.authenticateJWT(req, res);
         if (!user) {
@@ -672,7 +764,7 @@ class Server {
         }
         this.repo.incrementUserAPIConsumption(user.id);
 
-        if (user.role === 'admin') {
+        if (user.role === adminConst) {
 
 
             const stats = await this.repo.selectAPIStats();
@@ -687,11 +779,13 @@ class Server {
         } else {
             this.unauthorizedPage(res);
         }
-
-
-
     }
 
+    /**
+     * Asynchronous function to get the user's favourite recipes
+     * @param {*} req 
+     * @param {*} res 
+     */
     async getFavourites(req, res) {
         const user = this.authenticateJWT(req, res);
         if (!user) {
@@ -699,6 +793,7 @@ class Server {
         }
         this.repo.incrementUserAPIConsumption(user.id);
 
+        // Get the user's favourite recipes
         const recipes = await this.repo.selectUsersFavouriteRecipes(user.id);
         if (!recipes.success) {
             this.serverError(res);
@@ -716,8 +811,7 @@ class Server {
             )
         }
 
-        console.log("RECIPES: " + formattedRecipes);
-
+        //console.log("RECIPES: " + formattedRecipes);
 
         res.writeHead(200);
         res.write(JSON.stringify(formattedRecipes));
@@ -726,6 +820,11 @@ class Server {
 
     }
 
+    /**
+     * Asynchronous function to add a favourite recipe
+     * @param {*} req 
+     * @param {*} res
+     */
     async addFavourite(req, res) {
         const user = this.authenticateJWT(req, res);
         if (!user) {
@@ -733,6 +832,7 @@ class Server {
         }
         this.repo.incrementUserAPIConsumption(user.id);
 
+        // Get the recipe from the request body
         const info = await this.parseBody(req);
         const result = await this.repo.insertFavouriteRecipe(user.id, info.recipe);
         if (!result.success) {
@@ -749,6 +849,11 @@ class Server {
 
     }
 
+    /**
+     * Asynchronous function to delete a favourite recipe
+     * @param {*} req 
+     * @param {*} res 
+     */
     async deleteFavourites(req, res) {
         const user = this.authenticateJWT(req, res);
         if (!user) {
@@ -756,6 +861,7 @@ class Server {
         }
         this.repo.incrementUserAPIConsumption(user.id);
 
+        // Get the recipe ID from the request URL
         const reqUrl = url.parse(req.url, true);
         const id = reqUrl.query.recipe;
         const result = await this.repo.deleteFavourite(id);
@@ -772,6 +878,11 @@ class Server {
         res.end();
     }
 
+    /**
+     * Asynchronous function to delete a user
+     * @param {*} req 
+     * @param {*} res
+     */
     async deleteUser(req, res) {
         const user = this.authenticateJWT(req, res);
         if (!user) {
@@ -779,7 +890,7 @@ class Server {
         }
         this.repo.incrementUserAPIConsumption(user.id);
 
-        if (user.role === 'admin') {
+        if (user.role === adminConst) {
 
 
             const reqUrl = url.parse(req.url, true);
@@ -803,6 +914,11 @@ class Server {
 
     }
 
+    /**
+     * Asynchronous function to change the token count for a user
+     * @param {*} req 
+     * @param {*} res 
+     */
     async changeTokenCount(req, res) {
         const user = this.authenticateJWT(req, res);
         if (!user) {
@@ -812,7 +928,7 @@ class Server {
 
         const reqUrl = url.parse(req.url, true);
         const id = reqUrl.query.user;
-        if (user.role === 'admin') {
+        if (user.role === adminConst) {
 
 
             const info = await this.parseBody(req);
@@ -832,6 +948,11 @@ class Server {
         }
     }
 
+    /**
+     * Asynchronous function to get the user's API consumption
+     * @param {*} req 
+     * @param {*} res 
+     */
     async getUserConsumption(req, res) {
         const user = this.authenticateJWT(req, res);
         if (!user) {
@@ -850,6 +971,11 @@ class Server {
         res.end();
     }
 
+    /**
+     * Asynchronous function to get a recipe from the API
+     * @param {*} req 
+     * @param {*} res
+     */
     async getRecipe(req, res) {
         const user = this.authenticateJWT(req, res);
         if (!user) {
@@ -863,6 +989,7 @@ class Server {
             return;
         }
 
+        // Check if the user has enough tokens
         const tokens = checkTokens.result.tokens;
         if (tokens > 0) {
             const schema = joi.object({
@@ -915,6 +1042,10 @@ class Server {
         res.end();
     }
 
+    /**
+     * Gives a 404 response for unimplemented pages
+     * @param {*} res 
+     */
     pageNotFoundResponse(res) {
         res.writeHead(404);
 
@@ -928,6 +1059,10 @@ class Server {
         res.end();
     }
 
+    /**
+     * Gives a 401 response for unauthorized pages
+     * @param {*} res 
+     */
     unauthorizedPage(res) {
         res.writeHead(401);
 
@@ -941,6 +1076,10 @@ class Server {
         res.end();
     }
 
+    /**
+     * Gives a 500 response for server errors
+     * @param {*} res 
+     */
     serverError(res) {
         res.writeHead(500);
 
@@ -954,21 +1093,27 @@ class Server {
         res.end();
     }
 
+    /**
+     * Asynchronous function to handle GET requests
+     * @param {*} req 
+     * @param {*} res 
+     * @param {*} path 
+     */
     async handleGet(req, res, path) {
         switch (path) {
             case generatePath:
                 this.getRecipe(req, res);
                 break;
-            case "users":
+            case usersPath:
                 await this.getAllUsers(req, res);
                 break;
-            case "apiStats":
+            case apiStatsPath:
                 await this.getAPIStats(req, res);
                 break;
-            case "favourites":
+            case favouritesPath:
                 await this.getFavourites(req, res);
                 break;
-            case "userConsumption":
+            case userConsumptionPath:
                 await this.getUserConsumption(req, res);
                 break;
             default:
@@ -976,6 +1121,12 @@ class Server {
         }
     }
 
+    /**
+     * Asynchronous function to handle POST requests
+     * @param {*} req 
+     * @param {*} res 
+     * @param {*} path 
+     */
     async handlePost(req, res, path) {
         switch (path) {
             case signupPath:
@@ -987,7 +1138,7 @@ class Server {
             case logoutPath:
                 this.userLogout(res);
                 break;
-            case "favourites":
+            case favouritesPath:
                 await this.addFavourite(req, res);
                 break;
             default:
@@ -995,9 +1146,15 @@ class Server {
         }
     }
 
+    /**
+     * Asynchronous function to handle PUT requests
+     * @param {*} req 
+     * @param {*} res 
+     * @param {*} path 
+     */
     async handlePut(req, res, path) {
         switch (path) {
-            case "users":
+            case usersPath:
                 this.changeTokenCount(req, res);
                 break;
             default:
@@ -1005,12 +1162,18 @@ class Server {
         }
     }
 
+    /**
+     * Asynchronous function to handle DELETE requests
+     * @param {*} req 
+     * @param {*} res 
+     * @param {*} path 
+     */
     async handleDelete(req, res, path) {
         switch (path) {
-            case "users":
+            case usersPath:
                 this.deleteUser(req, res);
                 break;
-            case "favourites":
+            case favouritesPath:
                 this.deleteFavourites(req, res);
                 break;
             default:
@@ -1019,7 +1182,7 @@ class Server {
     }
 
     /**
-     * Asynchronous function to handle a request
+     * Asynchronous function to handle a request by type
      * @param {*} req 
      * @param {*} res 
      * @returns response
@@ -1029,7 +1192,7 @@ class Server {
         const reqUrl = url.parse(req.url, true);
         const path = reqUrl.pathname.split('/');
         console.log(path);
-        if (path[1] === 'v1') {
+        if (path[1] === v1Path) {
             //Check the request method
             switch (req.method) {
                 case jsonPost: //POST request handling
@@ -1038,10 +1201,10 @@ class Server {
                 case jsonGet: //GET request handling
                     await this.handleGet(req, res, path[2]);
                     break;
-                case "PUT":
+                case jsonPut: //PUT request handling
                     await this.handlePut(req, res, path[2]);
                     break;
-                case "DELETE":
+                case jsonDelete: //DELETE request handling
                     await this.handleDelete(req, res, path[2]);
                     break;
                 default: //Anything but a GET or POST is unimplemented
@@ -1060,16 +1223,23 @@ class Server {
             this.pageNotFoundResponse(res);
         }
 
+        // Increment the API calls for the request
         await this.repo.incrementAPICalls(req.method, reqUrl.pathname);
     }
 
+    /**
+     * Serves a static file
+     * @param {*} res 
+     * @param {*} filePath 
+     * @param {*} contentType 
+     */
     serveStaticFile(res, filePath, contentType) {
         fs.readFile(filePath, (err, data) => {
             if (err) {
                 this.serverError(res);
                 return;
             }
-            res.writeHead(200, { 'Content-Type': contentType });
+            res.writeHead(200, { jsonContentType : contentType });
             res.end(data);
         });
     }
@@ -1090,24 +1260,25 @@ class Server {
                 res.setHeader(corsOrigin, corsOriginValue);
                 res.setHeader(corsMethods, corsMethodsValue);
                 res.setHeader(corsHeaders, corsHeadersValue);
-                res.setHeader("Access-Control-Expose-Headers", "Content-Type, Authorization");
+                res.setHeader(corsExposeHeaders, corsHeadersValue);
                 res.setHeader(corsCredentials, trueConst);
 
                 //Handles OPTIONS pre-flight requests from CORS
                 if (req.method === optionsConst) {
-                    console.log("PRE_FLIGHT")
+                    //console.log("PRE_FLIGHT")
                     res.writeHead(204);
                     res.end();
                     return;
                 }
 
+                //Parse the request URL
                 const reqUrl = url.parse(req.url, true);
-                if (reqUrl.pathname === '/doc') {
-                    const filePath = 'swagger.html';
-                    this.serveStaticFile(res, filePath, 'text/html');
-                } else if (reqUrl.pathname === '/swagger.yaml') {
-                    const filePath = 'swagger.yaml';
-                    this.serveStaticFile(res, filePath, 'text/plain');
+                if (reqUrl.pathname === docConst) {
+                    const filePath = swaggerHTMLPath;
+                    this.serveStaticFile(res, filePath, textHTMLConst);
+                } else if (reqUrl.pathname === swaggerYMLPathSlash) {
+                    const filePath = swaggerYMLPath;
+                    this.serveStaticFile(res, filePath, textPlainConst);
                 } else {
                     res.setHeader(jsonContentType, jsonApplication); //returning json responses from server
                     this.handleRequest(req, res);
@@ -1118,7 +1289,7 @@ class Server {
                 // Set the timeout to 0 to prevent the server from closing the connection
                 .setTimeout(0)
                 .listen(this.port, () => {
-                    console.log(messages.messages.ServerRunning.replace("{port}", this.port));
+                    console.log(messages.messages.ServerRunning.replace(portConst, this.port));
                 }); // listens on the passed in port
         } catch (error) {
             console.error(messages.messages.DatabaseError, error);
