@@ -52,6 +52,7 @@ const jsonContentType = "Content-Type";
 const jsonApplication = "application/json";
 const dataConst = "data";
 const endConst = "end";
+const portConst = "{port}";
 
 // Path constants
 const signupPath = "/signup";
@@ -514,7 +515,7 @@ class Server {
                 // Set the timeout to 0 to prevent the server from closing the connection
                 .setTimeout(0)
                 .listen(this.port, () => {
-                    console.log(messages.ServerRunning.replace("{port}", this.port));
+                    console.log(messages.ServerRunning.replace(portConst, this.port));
                 }); // listens on the passed in port
         } catch (error) {
             console.error(messages.messages.DatabaseError, error);
